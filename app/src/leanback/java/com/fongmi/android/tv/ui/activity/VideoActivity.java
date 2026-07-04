@@ -1146,7 +1146,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (Setting.isIncognito() && mHistory.getKey().equals(getHistoryKey())) mHistory.delete();
         mBinding.control.action.opening.setText(mHistory.getOpening() <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
         mBinding.control.action.ending.setText(mHistory.getEnding() <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
-        mBinding.control.action.speed.setText(player().setSpeed(mHistory.getSpeed()));
+        applyHistorySpeed();
         mHistory.setVodName(item.getName());
         setArtwork(item.getPic());
         setScale(getScale());
@@ -1283,6 +1283,12 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     protected void onPrepare() {
         setDecode();
         setPosition();
+        applyHistorySpeed();
+    }
+
+    private void applyHistorySpeed() {
+        if (mHistory == null) return;
+        mBinding.control.action.speed.setText(player().setSpeed(mHistory.getSpeed()));
     }
 
     @Override
