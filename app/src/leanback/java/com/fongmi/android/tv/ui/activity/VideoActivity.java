@@ -469,6 +469,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     }
 
     private void getDetail(Vod item) {
+        saveHistory();
         getIntent().putExtra("key", item.getSiteKey());
         getIntent().putExtra("pic", item.getPic());
         getIntent().putExtra("id", item.getId());
@@ -477,7 +478,6 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         updateNavigationKey();
         player().reset();
         player().stop();
-        saveHistory();
         getDetail();
     }
 
