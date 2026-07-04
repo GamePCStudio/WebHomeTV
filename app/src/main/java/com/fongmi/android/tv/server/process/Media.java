@@ -40,7 +40,7 @@ public class Media implements Process {
         }
     }
 
-    private JsonObject build(PlayerManager player) {
+    public static JsonObject build(PlayerManager player) {
         if (player.isReleased()) return new JsonObject();
         MediaItem item = player.getCurrentMediaItem();
         MediaMetadata meta = item != null ? item.mediaMetadata : MediaMetadata.EMPTY;
@@ -56,7 +56,7 @@ public class Media implements Process {
         return result;
     }
 
-    private int getState(PlayerManager player) {
+    private static int getState(PlayerManager player) {
         if (player.isPlaying()) return 3;
         int state = player.getPlaybackState();
         if (state == Player.STATE_BUFFERING) return 6;
@@ -64,11 +64,11 @@ public class Media implements Process {
         return 1;
     }
 
-    private String getString(CharSequence text) {
+    private static String getString(CharSequence text) {
         return text != null ? text.toString() : "";
     }
 
-    private String getString(Uri uri) {
+    private static String getString(Uri uri) {
         return uri != null ? uri.toString() : "";
     }
 }

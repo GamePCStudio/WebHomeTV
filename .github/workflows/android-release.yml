@@ -180,16 +180,23 @@ jobs:
           CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
         run: |
           rm -rf cnb-mirror
-          git clone --depth 1 "https://cnb:$CNB_TOKEN@cnb.cool/code_free/webtv.git" cnb-mirror 2>&1 || { echo "WARNING: CNB clone failed, skipping mirror sync"; exit 0; }
+          if ! git clone --depth 1 "https://cnb:$CNB_TOKEN@cnb.cool/code_free/webtv.git" cnb-mirror 2>&1; then
+            echo "- CNB APK mirror: clone failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           mkdir -p cnb-mirror/apk
           cp dist/*.apk dist/*.json cnb-mirror/apk/
           cd cnb-mirror
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apk/
-          git diff --cached --quiet && { echo "No changes to push to CNB"; exit 0; }
+          git diff --cached --quiet && { echo "- CNB APK mirror: no changes" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
           git commit -m "${{ github.ref_name }}"
-          git push origin HEAD:main 2>&1 || echo "WARNING: CNB push failed"
+          if git push origin HEAD:main 2>&1; then
+            echo "- CNB APK mirror: synced" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- CNB APK mirror: push failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Sync TV source
         if: startsWith(github.ref, 'refs/tags/v') && env.CNB_TOKEN != ''
@@ -198,7 +205,10 @@ jobs:
           CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
         run: |
           rm -rf cnb-tv
-          git clone --depth 1 "https://cnb:$CNB_TOKEN@cnb.cool/code_free/TV" cnb-tv 2>&1 || { echo "WARNING: TV source clone failed, skipping sync"; exit 0; }
+          if ! git clone --depth 1 "https://cnb:$CNB_TOKEN@cnb.cool/code_free/TV" cnb-tv 2>&1; then
+            echo "- CNB TV source: clone failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           cd cnb-tv
           python3 - <<'PY'
           import re
@@ -212,9 +222,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add api.json
-          git diff --cached --quiet && { echo "No TV source changes to push"; exit 0; }
+          git diff --cached --quiet && { echo "- CNB TV source: no changes" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
           git commit -m "chore: sync TV source for ${{ github.ref_name }}"
-          git push origin HEAD:master 2>&1 || echo "WARNING: TV source push failed"
+          if git push origin HEAD:master 2>&1; then
+            echo "- CNB TV source: synced" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- CNB TV source: push failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload APKs as workflow artifact
         if: always()

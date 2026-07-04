@@ -45,6 +45,11 @@ public class ServerAuth {
         return isLocalIp(remoteIp(session));
     }
 
+    public static boolean isLocalOrLan(NanoHTTPD.IHTTPSession session) {
+        String ip = remoteIp(session);
+        return isLocalIp(ip) || isLanIp(ip);
+    }
+
     private static boolean isLocalIp(String ip) {
         if (TextUtils.isEmpty(ip)) return false;
         return "127.0.0.1".equals(ip) || "::1".equals(ip) || "localhost".equalsIgnoreCase(ip);

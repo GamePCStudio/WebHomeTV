@@ -237,9 +237,9 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(LiveViewModel.class);
-        mViewModel.url().observeForever(mObserveUrl);
+        mViewModel.url().observe(this, mObserveUrl);
         mViewModel.xml().observe(this, this::setEpg);
-        mViewModel.epg().observeForever(mObserveEpg);
+        mViewModel.epg().observe(this, mObserveEpg);
         mViewModel.live().observe(this, live -> {
             mViewModel.parseXml(live);
             setGroup(live);
@@ -1153,8 +1153,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     protected void onDestroy() {
         Source.get().exit();
         App.removeCallbacks(mR1, mR2, mR3);
-        mViewModel.url().removeObserver(mObserveUrl);
-        mViewModel.epg().removeObserver(mObserveEpg);
         super.onDestroy();
     }
 }

@@ -442,9 +442,9 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
-        mViewModel.getResult().observeForever(mObserveDetail);
-        mViewModel.getPlayer().observeForever(mObservePlayer);
-        mViewModel.getSearch().observeForever(mObserveSearch);
+        mViewModel.getResult().observe(this, mObserveDetail);
+        mViewModel.getPlayer().observe(this, mObservePlayer);
+        mViewModel.getSearch().observe(this, mObserveSearch);
     }
 
     private void checkCast() {
@@ -1688,9 +1688,6 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         DanmakuApi.cancel();
         RefreshEvent.keep();
         App.removeCallbacks(mR1, mR2, mR3, mR4);
-        mViewModel.getResult().removeObserver(mObserveDetail);
-        mViewModel.getPlayer().removeObserver(mObservePlayer);
-        mViewModel.getSearch().removeObserver(mObserveSearch);
         SiteHealthStore.flush();
         super.onDestroy();
     }

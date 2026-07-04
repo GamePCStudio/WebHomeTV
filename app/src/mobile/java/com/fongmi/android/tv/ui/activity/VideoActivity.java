@@ -431,9 +431,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
-        mViewModel.getResult().observeForever(mObserveDetail);
-        mViewModel.getPlayer().observeForever(mObservePlayer);
-        mViewModel.getSearch().observeForever(mObserveSearch);
+        mViewModel.getResult().observe(this, mObserveDetail);
+        mViewModel.getPlayer().observe(this, mObservePlayer);
+        mViewModel.getSearch().observe(this, mObserveSearch);
     }
 
     private void checkId() {
@@ -454,6 +454,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void getDetail(Vod item) {
+        saveHistory();
         getIntent().putExtra("key", item.getSiteKey());
         getIntent().putExtra("pic", item.getPic());
         getIntent().putExtra("id", item.getId());
@@ -464,7 +465,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         updateNavigationKey();
         player().reset();
         player().stop();
-        saveHistory();
         getDetail();
     }
 
@@ -1764,9 +1764,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         DanmakuApi.cancel();
         RefreshEvent.keep();
         App.removeCallbacks(mR1, mR2, mR3, mR4);
-        mViewModel.getResult().removeObserver(mObserveDetail);
-        mViewModel.getPlayer().removeObserver(mObservePlayer);
-        mViewModel.getSearch().removeObserver(mObserveSearch);
         SiteHealthStore.flush();
         super.onDestroy();
     }

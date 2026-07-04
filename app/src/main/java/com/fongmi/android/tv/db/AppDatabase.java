@@ -134,13 +134,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 .addMigrations(Migrations.MIGRATION_34_35)
                 .addMigrations(Migrations.MIGRATION_35_36)
                 .addMigrations(Migrations.MIGRATION_36_37)
-                // WARNING: versions <30 fall back to destructive migration (all data lost).
-                // Adding earlier migration chains requires old schema definitions (v1-v29).
-                .fallbackToDestructiveMigrationFrom(true, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                        21, 22, 23, 24, 25, 26, 27, 28, 29)
-                // allowMainThreadQueries remains for legacy callers — queries run on a
-                // background executor to reduce ANR window.
                 .setQueryExecutor(Task.executor())
                 .setTransactionExecutor(Task.largeExecutor())
                 .allowMainThreadQueries().build();

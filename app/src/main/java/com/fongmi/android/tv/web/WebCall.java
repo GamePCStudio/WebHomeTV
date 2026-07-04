@@ -14,6 +14,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +50,7 @@ public class WebCall {
             String responseType = Json.safeString(payload, "responseType");
             boolean include = "include".equals(Json.safeString(payload, "credentials"));
             int timeout = getTimeout(payload);
+            validateTarget(url);
             Map<String, String> headers = HeaderPolicy.withDefaultUa(HeaderPolicy.parse(payload.get("headers")));
             setDefaultEncoding(headers);
             Request.Builder builder = new Request.Builder().url(url).headers(HeaderPolicy.of(headers));
@@ -129,6 +132,17 @@ public class WebCall {
             return Math.max(payload.get("timeout").getAsInt(), 1);
         } catch (Exception e) {
             return 30;
+        }
+    }
+
+    private static void validateTarget(String url) throws Exception {
+        URI uri = URI.create(url);
+        String scheme = uri.getScheme();
+        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) throw new IOException("Unsupported url");
+        String host = uri.getHost();
+        if (TextUtils.isEmpty(host)) throw new IOException("Unsupported url");
+        for (InetAddress address : InetAddress.getAllByName(host)) {
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress() || address.isSiteLocalAddress()) throw new IOException("Private address is not allowed");
         }
     }
 

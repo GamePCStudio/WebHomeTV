@@ -10,6 +10,9 @@ if (localPropsFile.exists()) {
     }
 }
 def hasReleaseSigning = localProps['storeFile'] && localProps['keyAlias'] && localProps['storePassword']
+if (gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') } && !hasReleaseSigning) {
+    throw new GradleException('Release signing is required for release builds')
+}
 
 android {
     namespace = 'com.fongmi.android.tv'
@@ -20,8 +23,8 @@ android {
         applicationId "com.fongmi.android.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 603
-        versionName "5.5.53"
+        versionCode 604
+        versionName "5.5.54"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
@@ -72,7 +75,7 @@ android {
         release {
             minifyEnabled = true
             shrinkResources = true
-            signingConfig = hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
+            signingConfig = signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-rules-media.pro'
         }
     }

@@ -9,9 +9,11 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.api.SiteApi;
 import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Device;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.server.Server;
+import com.fongmi.android.tv.server.process.Media;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.LiveActivity;
@@ -115,7 +117,7 @@ public class HomeWebBridge {
                 case "player.playUrl" -> playUrl(payload, trusted);
                 case "player.playVod" -> playVod(payload);
                 case "player.control" -> control(payload);
-                case "player.status" -> WebCall.request(statusPayload());
+                case "player.status" -> status();
                 case "app.search" -> search(payload);
                 case "app.openLive" -> openLive();
                 case "app.openKeep" -> openKeep();
@@ -173,9 +175,17 @@ public class HomeWebBridge {
 
     private void guard(String method, JsonObject payload, boolean trusted) {
         if (trusted) return;
-        if ("net.request".equals(method) && sensitiveRequest(payload)) throw new SecurityException("Forbidden method: " + method);
         if ("player.playUrl".equals(method)) validatePlayable(Json.safeString(payload, "url"));
-        if ("app.history".equals(method) || "device.info".equals(method) || "config.info".equals(method) || "app.openSetting".equals(method) || method.startsWith("cache.")) throw new SecurityException("Forbidden method: " + method);
+        if (isUntrustedAllowed(method, payload)) return;
+        throw new SecurityException("Forbidden method: " + method);
+    }
+
+    private boolean isUntrustedAllowed(String method, JsonObject payload) {
+        return switch (method) {
+            case "net.request", "net.resourceUrl" -> !sensitiveRequest(payload);
+            case "player.playUrl", "player.status", "site.info", "ext.info", "ext.log", "ext.toast" -> true;
+            default -> false;
+        };
     }
 
     private boolean sensitiveRequest(JsonObject payload) {
@@ -227,11 +237,9 @@ public class HomeWebBridge {
         return "{}";
     }
 
-    private JsonObject statusPayload() {
-        JsonObject payload = new JsonObject();
-        payload.addProperty("url", Server.get().getAddress("/media"));
-        payload.addProperty("responseType", "json");
-        return payload;
+    private String status() {
+        PlaybackService service = Server.get().getService();
+        return service == null ? "{}" : Media.build(service.player()).toString();
     }
 
     private String search(JsonObject payload) {
@@ -295,9 +303,7 @@ public class HomeWebBridge {
     }
 
     private String device() {
-        JsonObject payload = new JsonObject();
-        payload.addProperty("url", Server.get().getAddress("/device"));
-        return WebCall.request(payload);
+        return App.gson().toJson(Device.get());
     }
 
     private String site() {

@@ -74,7 +74,7 @@ public class Nano extends NanoHTTPD {
         SpiderDebug.log("server", "%s %s keys=%s", session.getMethod(), url, session.getParms().keySet());
         if (!ServerAuth.allow(session, url)) return error(Response.Status.UNAUTHORIZED, "Unauthorized");
         if (url.startsWith("/tvbus")) return ok(LiveConfig.getResp());
-        if (url.startsWith("/device")) return ok(deviceInfo());
+        if (url.startsWith("/device")) return ServerAuth.isLocalOrLan(session) ? ok(deviceInfo()) : error(Response.Status.UNAUTHORIZED, "Unauthorized");
         for (Process process : process) if (process.isRequest(session, url)) return process.doResponse(session, url, files);
         return getAssets(url.substring(1));
     }

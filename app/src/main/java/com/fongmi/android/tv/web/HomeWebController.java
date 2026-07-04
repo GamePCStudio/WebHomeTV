@@ -38,6 +38,7 @@ import com.fongmi.android.tv.utils.WebViewUtil;
 import com.fongmi.android.tv.web.ext.WebHomeExtension;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
 
+import java.io.File;
 import java.net.IDN;
 import java.util.Collections;
 import java.util.HashSet;
@@ -226,10 +227,16 @@ public class HomeWebController {
 
     private boolean isAllowedFilePath(String path) {
         if (TextUtils.isEmpty(path)) return false;
-        String appDir = App.get().getFilesDir().getParent();
-        if (path.startsWith(appDir)) return true;
         if (path.startsWith("/android_asset/")) return true;
-        return false;
+        try {
+            File appDir = new File(App.get().getFilesDir().getParent()).getCanonicalFile();
+            File target = new File(path).getCanonicalFile();
+            String appPath = appDir.getPath();
+            String targetPath = target.getPath();
+            return target.equals(appDir) || targetPath.startsWith(appPath + File.separator);
+        } catch (Throwable e) {
+            return false;
+        }
     }
 
     private boolean matchesAllowedOrigin(String url) {

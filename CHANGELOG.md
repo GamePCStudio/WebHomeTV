@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.54 — WebHome and release safety audit fixes (2026-07-04)
+
+修复代码审计中发现的 WebHome 信任边界、Native 请求、Release 签名和生命周期残余风险。
+
+### 修复 / 加固
+
+- **WebHome 文件信任**: `file://` 首页使用 canonical path 判断，避免路径前缀误判为受信任页面
+- **Native SDK 权限**: 未受信任 WebView 页面仅保留最小可用 API，播放控制、页面导航、缓存、设备和配置等能力需要受信任来源
+- **Native 请求防护**: `net.request` 拒绝本机、链路本地和局域网私有地址，避免受信任页面变成内网请求代理
+- **Release 签名**: Release 构建缺少签名配置时直接失败，不再回退到 debug 签名
+- **数据库迁移**: 移除 v1-v29 破坏性迁移声明，迁移失败时保留失败库副本后再重建
+- **设备发现边界**: `/device` 仅允许本机和局域网访问，保留一键同步发现能力并减少公网枚举
+- **生命周期观察者**: Leanback 和 Mobile 的播放/直播页改用 lifecycle-aware observer，减少手动解绑遗漏风险
+- **Mobile 换源续播**: 手机端切换搜索来源前先保存当前历史，避免重置播放器后丢失续播进度
+- **镜像同步可见性**: Release workflow 将 CNB 镜像和 TV 源同步结果写入 Actions summary
+
 ## 5.5.53 — Stability and release hardening (2026-07-04)
 
 继续收敛播放状态一致性与发布安全细节，降低升级和发版过程中的数据与凭据风险。
