@@ -22,4 +22,5 @@ nostr_副本*.html
 *.min.html
 *.tmp
 *.log
+*-apkapp.txt
 third_party/sources/

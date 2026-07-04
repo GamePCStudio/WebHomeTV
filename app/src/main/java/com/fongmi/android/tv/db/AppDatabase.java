@@ -27,10 +27,15 @@ import com.fongmi.android.tv.db.dao.TrackDao;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Formatters;
 import com.fongmi.android.tv.utils.Task;
+import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Path;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,11 +53,33 @@ public abstract class AppDatabase extends RoomDatabase {
             try {
                 instance = create(App.get());
             } catch (Throwable e) {
+                preserveFailedDatabase(App.get(), e);
                 App.get().deleteDatabase(NAME);
                 instance = create(App.get());
             }
         }
         return instance;
+    }
+
+    private static void preserveFailedDatabase(Context context, Throwable error) {
+        SpiderDebug.log(error);
+        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        preserveDatabaseFile(context.getDatabasePath(NAME), stamp);
+        preserveDatabaseFile(context.getDatabasePath(NAME + "-wal"), stamp);
+        preserveDatabaseFile(context.getDatabasePath(NAME + "-shm"), stamp);
+    }
+
+    private static void preserveDatabaseFile(File source, String stamp) {
+        if (source == null || !source.exists()) return;
+        File target = Path.cache(source.getName() + ".failed-" + stamp);
+        byte[] buffer = new byte[16384];
+        try (FileInputStream is = new FileInputStream(source); FileOutputStream os = new FileOutputStream(target)) {
+            int read;
+            while ((read = is.read(buffer)) != -1) os.write(buffer, 0, read);
+        } catch (Exception e) {
+            SpiderDebug.log(e);
+            Path.clear(target);
+        }
     }
 
     public static void backup() {
@@ -109,7 +136,9 @@ public abstract class AppDatabase extends RoomDatabase {
                 .addMigrations(Migrations.MIGRATION_36_37)
                 // WARNING: versions <30 fall back to destructive migration (all data lost).
                 // Adding earlier migration chains requires old schema definitions (v1-v29).
-                .fallbackToDestructiveMigration(true)
+                .fallbackToDestructiveMigrationFrom(true, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                        21, 22, 23, 24, 25, 26, 27, 28, 29)
                 // allowMainThreadQueries remains for legacy callers — queries run on a
                 // background executor to reduce ANR window.
                 .setQueryExecutor(Task.executor())
