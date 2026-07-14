@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.5.56 — Source entries and protocol compatibility (2026-07-14)
+
+补齐指定 TV 源入口，并确认播放器壳子已接入官方 FongMi 额外协议扩展能力。
+
+### 新增 / 优化
+
+- **指定源入口**: TV 源补充本地视频、手机推送、网络直播、哔哩直播、好看短剧和河马短剧
+- **源配置校验**: 检查 `api.json` 格式、站点 key 重复、直播配置、`spider.jar` md5 和本地 `js/py` 引用
+- **协议兼容**: README 标注 Force、JianPian、Thunder、TVBus 等 FongMi 协议扩展已接入
+
 ## 5.5.55 — FongMi api37 compatibility (2026-07-14)
 
 跟进官方 FongMi api37 适配，提升目标 SDK 并收敛新版 Android 权限请求路径。
