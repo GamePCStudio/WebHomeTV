@@ -47,13 +47,14 @@
 | Native SDK | 网页可通过 `window.fm` 调用受信任范围内的 App 原生播放、搜索、请求、缓存等能力 |
 | 本地管理页 | 局域网访问 App 管理页面，支持同步、文件、调试等能力 |
 | 发布与数据保护 | Release 签名缺失会中止构建，数据库异常恢复前保留失败库副本 |
+| Android 兼容性 | 跟进官方 FongMi api37，目标 SDK 更新到 37 |
 | 自动更新 | 多源更新，适配不同网络环境 |
 
 ---
 
 ## 下载安装
 
-最新版本：**v5.5.54**
+最新版本：**v5.5.55**
 
 下载地址：
 
@@ -203,17 +204,21 @@
 环境要求：
 
 - JDK 17
-- Android SDK
+- Android SDK 37
 - 仓库内置 `gradlew`
 
 常用构建命令：
 
 ```bash
+bash gradlew :app:assembleMobileUniversalRelease
 bash gradlew :app:assembleMobileArm64_v8aRelease
 bash gradlew :app:assembleMobileArmeabi_v7aRelease
+bash gradlew :app:assembleLeanbackUniversalRelease
 bash gradlew :app:assembleLeanbackArm64_v8aRelease
 bash gradlew :app:assembleLeanbackArmeabi_v7aRelease
 ```
+
+GitHub Actions 支持手动触发，也会在推送 `v*` 标签时自动构建六个 APK 并创建 Release。
 
 ---
 

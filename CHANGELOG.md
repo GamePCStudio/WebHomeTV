@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.5.55 — FongMi api37 compatibility (2026-07-14)
+
+跟进官方 FongMi api37 适配，提升目标 SDK 并收敛新版 Android 权限请求路径。
+
+### 优化 / 兼容
+
+- **Target SDK 37**: 将应用目标 SDK 提升到 37，保持与官方 FongMi api37 适配一致
+- **权限请求适配**: 文件访问按 Android 版本与系统能力请求所有文件访问或存储权限，Android 13+ 才请求通知权限
+- **构建工具链**: Gradle Wrapper 对齐官方参考版本，README 补齐六个 APK 构建与 Actions 发布说明
+
 ## 5.5.54 — WebHome and release safety audit fixes (2026-07-04)
 
 修复代码审计中发现的 WebHome 信任边界、Native 请求、Release 签名和生命周期残余风险。

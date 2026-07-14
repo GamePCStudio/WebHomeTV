@@ -145,7 +145,7 @@ jobs:
           ### 兼容性提示
 
           - 远程 JAR 必须带 `;sha256;` 否则不加载
-          - Android 11+ 文件管理走 SAF，不再申请 `MANAGE_EXTERNAL_STORAGE`
+          - Android 11+ 文件管理按系统能力请求所有文件访问或回退到存储权限
           - 自更新改为导出到 Downloads 通知用户手动安装
           - 旧设备（Android ≤ 10）行为不变
           """)
