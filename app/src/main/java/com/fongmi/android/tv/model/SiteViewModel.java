@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.fongmi.android.tv.Constant;
 import com.fongmi.android.tv.api.SiteApi;
 import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.exception.ExtractException;
@@ -115,7 +116,7 @@ public class SiteViewModel extends ViewModel {
                     result -> {
                         if (searchEpoch.get() != epoch) return;
                         SiteHealthStore.recordSearch(site, true, result.getList().size(), System.currentTimeMillis() - start, "");
-                        search.postValue(result);
+                        App.post(() -> { if (searchEpoch.get() == epoch) search.setValue(result); });
                     },
                     error -> {
                         if (searchEpoch.get() != epoch) return;

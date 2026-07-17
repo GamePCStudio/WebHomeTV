@@ -88,6 +88,9 @@ public class CustomWebView extends WebView implements DialogInterface.OnDismissL
         setting.setMediaPlaybackRequiresUserGesture(false);
         setting.setJavaScriptCanOpenWindowsAutomatically(false);
         setting.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        setting.setAllowFileAccess(false);
+        setting.setAllowFileAccessFromFileURLs(false);
+        setting.setAllowUniversalAccessFromFileURLs(false);
         setWebChromeClient(webChromeClient());
         setWebViewClient(webViewClient());
     }

@@ -20,6 +20,7 @@ import com.fongmi.android.tv.ui.activity.LiveActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.utils.FamilyFilter;
+import com.fongmi.android.tv.utils.DependencyTrust;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
@@ -208,6 +209,7 @@ public class HomeWebBridge {
         final String playUrl = url;
         final String playTitle = TextUtils.isEmpty(title) ? playUrl : title;
         SpiderDebug.log("webhome", "player.playUrl title=%s url=%s", playTitle, playUrl);
+        if (!trusted && !DependencyTrust.confirmPlay(controller.getTrustedOrigin(), playUrl)) return "{}";
         App.post(() -> VideoActivity.start(activity, SiteApi.PUSH, playUrl, playTitle));
         return "{}";
     }

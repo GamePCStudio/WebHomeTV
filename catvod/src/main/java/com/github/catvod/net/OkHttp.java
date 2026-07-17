@@ -275,7 +275,14 @@ public class OkHttp {
         }
 
         private void log(Call call, String event, String message) {
-            SpiderDebug.log("okhttp-player", "%s url=%s %s", event, call.request().url(), message);
+            SpiderDebug.log("okhttp-player", "%s url=%s %s", event, redactUrl(call.request().url()), message);
+        }
+
+        private String redactUrl(HttpUrl url) {
+            if (url == null) return "";
+            HttpUrl.Builder builder = url.newBuilder().query(null);
+            for (String name : url.queryParameterNames()) builder.addQueryParameter(name, "***");
+            return builder.build().toString();
         }
 
         private String redact(Headers headers) {

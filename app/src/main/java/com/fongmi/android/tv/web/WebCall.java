@@ -16,7 +16,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
@@ -33,7 +35,20 @@ import okhttp3.Response;
 public class WebCall {
 
     private static final long MAX_BODY_BYTES = 32L * 1024 * 1024;
-    private static final OkHttpClient CLIENT = new OkHttpClient.Builder().followRedirects(true).followSslRedirects(true).dns(OkHttp.dns()).proxySelector(OkHttp.selector()).proxyAuthenticator(OkHttp.authenticator()).build();
+    private static final OkHttpClient CLIENT = new OkHttpClient.Builder().followRedirects(true).followSslRedirects(true).dns(new FilteringDns()).proxySelector(OkHttp.selector()).proxyAuthenticator(OkHttp.authenticator()).build();
+
+    private static class FilteringDns implements okhttp3.Dns {
+        @Override
+        public List<InetAddress> lookup(String hostname) throws UnknownHostException {
+            List<InetAddress> addresses = OkHttp.dns().lookup(hostname);
+            for (InetAddress address : addresses) {
+                if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress() || address.isSiteLocalAddress()) {
+                    throw new UnknownHostException("Private address not allowed: " + hostname);
+                }
+            }
+            return addresses;
+        }
+    }
 
     public static String request(JsonObject payload) {
         return request(payload, null);

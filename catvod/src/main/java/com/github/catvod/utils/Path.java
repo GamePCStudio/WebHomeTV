@@ -123,9 +123,28 @@ public class Path {
     }
 
     public static File local(String path) {
-        path = path.replace("file:/", "");
+        path = path.replace("file:/", "").replace("file://", "");
         File file = new File(root(), path);
-        return file.exists() ? file : new File(path);
+        File target = file.exists() ? file : new File(path);
+        return isSafeLocal(target) ? target : root();
+    }
+
+    private static boolean isSafeLocal(File file) {
+        try {
+            String canonical = file.getCanonicalPath();
+            if (canonical.contains("..")) return false;
+            String cachePath = cache().getCanonicalPath();
+            String filesPath = files().getCanonicalPath();
+            String rootPath = root().getCanonicalPath();
+            return canonical.startsWith(cachePath + File.separator)
+                || canonical.startsWith(filesPath + File.separator)
+                || canonical.startsWith(rootPath + File.separator)
+                || canonical.equals(cachePath)
+                || canonical.equals(filesPath)
+                || canonical.equals(rootPath);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static String read(File file) {

@@ -295,8 +295,10 @@ public class Manage implements Process {
             if (port < 9978 || port > 9999) return false;
             String host = uri.getHost();
             if (TextUtils.isEmpty(host)) return false;
-            java.net.InetAddress addr = java.net.InetAddress.getByName(host);
-            return addr.isSiteLocalAddress() || addr.isLoopbackAddress() || addr.isLinkLocalAddress();
+            for (java.net.InetAddress addr : java.net.InetAddress.getAllByName(host)) {
+                if (!addr.isSiteLocalAddress() && !addr.isLoopbackAddress() && !addr.isLinkLocalAddress()) return false;
+            }
+            return true;
         } catch (Throwable e) {
             return false;
         }

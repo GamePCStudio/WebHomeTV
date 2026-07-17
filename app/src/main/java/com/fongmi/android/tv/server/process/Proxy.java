@@ -20,11 +20,22 @@ public class Proxy implements Process {
         return url.startsWith("/proxy");
     }
 
+    private static final String[] SENSITIVE_HEADERS = {"authorization", "cookie", "x-fongmi-token", "token", "set-cookie"};
+
+    private static boolean isSensitive(String name) {
+        if (name == null) return false;
+        String lower = name.toLowerCase();
+        for (String s : SENSITIVE_HEADERS) if (lower.contains(s)) return true;
+        return false;
+    }
+
     @Override
     public Response doResponse(IHTTPSession session, String url, Map<String, String> files) {
         try {
             Map<String, String> params = session.getParms();
-            params.putAll(session.getHeaders());
+            for (Map.Entry<String, String> entry : session.getHeaders().entrySet()) {
+                if (!isSensitive(entry.getKey())) params.put(entry.getKey(), entry.getValue());
+            }
             params.putAll(files);
             SpiderDebug.log("proxy", "request uri=%s method=%s do=%s keys=%s", url, session.getMethod(), params.get("do"), params.keySet());
             Object[] rs = BaseLoader.get().proxy(params);

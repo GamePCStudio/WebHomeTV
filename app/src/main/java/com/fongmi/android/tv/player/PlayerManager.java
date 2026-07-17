@@ -61,10 +61,11 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void release() {
-        player.removeListener(listener);
+        if (player == null && engine == null) return;
+        stopParse();
         App.removeCallbacks(runnable);
-        if (engine == null) return;
-        engine.release();
+        if (player != null) player.removeListener(listener);
+        if (engine != null) engine.release();
         engine = null;
         player = null;
     }

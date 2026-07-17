@@ -46,6 +46,8 @@ public class JarLoader {
         spiders.clear();
         locks.clear();
         recent = null;
+        File optRoot = new File(App.get().getCodeCacheDir(), "dexopt");
+        if (optRoot.exists()) for (File child : optRoot.listFiles() == null ? new File[0] : optRoot.listFiles()) Path.clear(child);
     }
 
     public void setRecent(String recent) {
@@ -55,7 +57,7 @@ public class JarLoader {
     private void load(String key, File file) {
         if (Thread.interrupted()) return;
         if (!Path.exists(file) || !file.setReadOnly()) return;
-        File optDir = new File(App.get().getCodeCacheDir(), "dexopt");
+        File optDir = new File(App.get().getCodeCacheDir(), "dexopt" + File.separator + key);
         if (!optDir.exists()) optDir.mkdirs();
         DexClassLoader loader = new DexClassLoader(file.getAbsolutePath(), optDir.getAbsolutePath(), null, App.get().getClassLoader());
         invokeInit(loader);
@@ -97,7 +99,7 @@ public class JarLoader {
             if (asset) {
                 File file = Download.create(jar, Path.jar(jar)).get();
                 if (Path.exists(file) && (hash.isEmpty() || verify(file, hashType, hash))) load(key, file);
-            } else if (jar.startsWith("http")) {
+            } else if (jar.startsWith("https")) {
                 if (hash.isEmpty()) {
                     SpiderDebug.log("jar", "rejected remote jar without ;sha256;/;md5; key=%s url=%s", key, jar);
                     return;
@@ -114,8 +116,22 @@ public class JarLoader {
                 }
                 load(key, file);
             } else if (jar.startsWith("file")) {
+                if (hash.isEmpty()) {
+                    SpiderDebug.log("jar", "rejected file jar without ;sha256;/;md5; key=%s url=%s", key, jar);
+                    return;
+                }
                 File file = Path.local(jar);
-                if (Path.exists(file) && (hash.isEmpty() || verify(file, hashType, hash))) load(key, file);
+                if (!Path.exists(file) || !verify(file, hashType, hash)) {
+                    SpiderDebug.log("jar", "file jar missing or hash mismatch key=%s url=%s", key, jar);
+                    return;
+                }
+                if (!DependencyTrust.confirm("JAR", jar, hashType, hash, file)) {
+                    SpiderDebug.log("jar", "file jar not trusted key=%s url=%s", key, jar);
+                    return;
+                }
+                load(key, file);
+            } else if (jar.startsWith("http")) {
+                SpiderDebug.log("jar", "rejected cleartext http jar key=%s url=%s", key, jar);
             } else {
                 SpiderDebug.log("jar", "skipped unrecognized jar key=%s url=%s", key, jar);
             }

@@ -98,9 +98,11 @@ public class SocketHttpStreamServer implements StreamServer<SocketHttpStreamServ
     }
 
     private boolean isKnownPeer(Socket socket) {
-        if (controlPoints.isEmpty()) return true;
         String peer = socket.getInetAddress().getHostAddress();
-        return controlPoints.contains(peer);
+        if (controlPoints.contains(peer)) return true;
+        if (!controlPoints.isEmpty()) return false;
+        InetAddress addr = socket.getInetAddress();
+        return addr.isSiteLocalAddress() && !addr.isLoopbackAddress();
     }
 
     @Override
@@ -227,7 +229,7 @@ public class SocketHttpStreamServer implements StreamServer<SocketHttpStreamServ
 
         private static boolean isAllowedAction(Map<String, List<String>> headers) {
             List<String> values = headers.get("soapaction");
-            if (values == null || values.isEmpty()) return true;
+            if (values == null || values.isEmpty()) return false;
             String action = values.get(0).replace("\"", "");
             int hash = action.lastIndexOf('#');
             String name = hash >= 0 ? action.substring(hash + 1) : action.substring(action.lastIndexOf('/') + 1);

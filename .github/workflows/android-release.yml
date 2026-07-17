@@ -28,17 +28,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools platforms;android-28 platforms;android-29 platforms;android-37.0 build-tools;36.0.0
+          packages: platform-tools platforms;android-37 build-tools;37.0.0
 
       - name: Write local.properties
         run: |
@@ -166,8 +166,10 @@ jobs:
 
       - name: Check mirror availability
         if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
         run: |
-          if [ -z "${{ secrets.CNB_TOKEN }}" ]; then
+          if [ -z "$CNB_TOKEN" ]; then
             echo "::warning title=CNB Mirror Sync Disabled::CNB_TOKEN secret is not configured. Update mirror (cnb.cool) will NOT receive new APKs. Go to Settings → Secrets → Actions to add it."
           else
             echo "CNB_TOKEN configured, mirror sync will run."

@@ -1,5 +1,31 @@
 # Changelog
 
+## 5.5.58 — Security audit hardening (2026-07-17)
+
+代码审计发现的高/中/低风险项系统性修复，覆盖远程代码加载、本地服务、WebHome 桥、DLNA、播放器和 CI 构建链。
+
+### 安全加固
+
+- **远程 JAR 加载**: 拒绝明文 `http://` JAR；`file://` JAR 必须带 hash 且经过依赖信任确认
+- **依赖信任键**: 信任键从 `hashCode` 改为 SHA-256，避免碰撞；新增非信任页面播放确认
+- **路径穿越**: `Path.local()` 校验 canonical 路径必须落在 cache/files/root 安全目录内
+- **DNS 重绑定**: WebCall 新增 `FilteringDns`，DNS 解析阶段拒绝私有/回环/链路本地地址
+- **DLNA**: `SocketHttpStreamServer` 收紧已知 peer 判定，缺失 `soapaction` 的请求直接拒绝
+- **本地服务**: `ServerAuth` 扩展受保护路径（`/media`、`/tvbus`、`/device`），不再信任 `http-client-ip` 头
+- **Manage 跳转**: `isValidTarget` 校验所有解析地址均为本机/局域网，避免 DNS 重绑定绕过
+- **代理头转发**: `/proxy` 不再向 spider 转发 `authorization`、`cookie`、`x-fongmi-token` 等敏感头
+- **日志脱敏**: SiteApi 播放日志和 OkHttp DebugEventListener 的 URL/头信息脱敏
+- **WebView**: `CustomWebView` 显式关闭 `file://` 访问和通用文件访问
+
+### 优化
+
+- **搜索相关性**: 预编译噪声正则，扩展 CJK 标点覆盖；相关性阈值可通过 `search_relevance_threshold` 配置
+- **搜索取消**: 多源搜索回调在主线程二次校验 epoch，缩小 TOCTOU 窗口
+- **DexOpt 隔离**: 每个 spider key 使用独立 `dexopt/<key>` 目录，`clear()` 清理所有子目录
+- **CORS 收敛**: `/webResource` 仅允许必要的请求头和暴露头
+- **组件导出**: `LiveActivity` 改为 `exported=false`（无 intent-filter，仅内部启动）
+- **CI 构建链**: JDK 升级到 21 对齐源码目标，build-tools 升级到 37.0.0，CNB_TOKEN 通过 env 注入避免脚本注入
+
 ## 5.5.57 — Search relevance polish (2026-07-18)
 
 优化多源搜索结果相关性，减少与关键词不匹配的模糊结果。

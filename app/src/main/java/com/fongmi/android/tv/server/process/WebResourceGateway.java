@@ -115,8 +115,8 @@ public class WebResourceGateway implements Process {
         String origin = session.getHeaders().get("origin");
         response.addHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "");
         response.addHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS");
-        response.addHeader("Access-Control-Allow-Headers", "*");
-        response.addHeader("Access-Control-Expose-Headers", "*");
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type,Range,X-Requested-With,Authorization");
+        response.addHeader("Access-Control-Expose-Headers", "Content-Type,Content-Length,Content-Range,Accept-Ranges");
         response.addHeader("Access-Control-Max-Age", "86400");
         return response;
     }

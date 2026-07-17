@@ -147,7 +147,7 @@ public class SiteApi {
         Source.get().stop();
         if (site.getType() == 3) {
             String playerContent = site.recent().spider().playerContent(flag, id, VodConfig.get().getFlags());
-            SpiderDebug.log("player", playerContent);
+            SpiderDebug.log("player", "key=%s,flag=%s,id=%s,len=%d", key, flag, id, playerContent == null ? 0 : playerContent.length());
             Result result = Result.fromJson(playerContent);
             if (result.getFlag().isEmpty()) result.setFlag(flag);
             result.setUrl(Source.get().fetch(result));
@@ -159,7 +159,7 @@ public class SiteApi {
             params.put("play", id);
             params.put("flag", flag);
             String playerContent = call(site, params);
-            SpiderDebug.log("player", playerContent);
+            SpiderDebug.log("player", "key=%s,flag=%s,id=%s,len=%d", key, flag, id, playerContent == null ? 0 : playerContent.length());
             Result result = Result.fromJson(playerContent);
             if (result.getFlag().isEmpty()) result.setFlag(flag);
             result.setUrl(Source.get().fetch(result));
@@ -171,7 +171,7 @@ public class SiteApi {
             result.setParse(0);
             result.setFlag(flag);
             result.setUrl(Source.get().fetch(result));
-            SpiderDebug.log("player", result.toString());
+            SpiderDebug.log("player", "key=%s,flag=%s,parse=%d", key, flag, result.getParse());
             return result;
         } else {
             Result result = new Result();
@@ -181,7 +181,7 @@ public class SiteApi {
             result.setPlayUrl(site.getPlayUrl());
             result.setParse(Sniffer.isVideoFormat(id) && result.getPlayUrl().isEmpty() ? 0 : 1);
             result.setUrl(Source.get().fetch(result));
-            SpiderDebug.log("player", result.toString());
+            SpiderDebug.log("player", "key=%s,flag=%s,parse=%d", key, flag, result.getParse());
             return result;
         }
     }
@@ -208,18 +208,28 @@ public class SiteApi {
         }
     }
 
+    private static final java.util.regex.Pattern NOISE_PATTERN = java.util.regex.Pattern.compile(
+        "[\\s\\p{Punct}　‐-―‘’“”、。〈-】〔〕（），：；？！《》「」『』]+"
+    );
+
     @NonNull
     private static Result applySearchRelevance(@NonNull Site site, @NonNull Result result, @NonNull String keyword) {
         String target = normalizeSearchText(keyword);
         if (target.isEmpty()) return result;
+        int threshold = getSearchRelevanceThreshold();
         List<Vod> items = new ArrayList<>();
         for (Vod vod : result.getList()) {
             vod.setSite(site);
-            if (searchRank(vod, target) < 5) items.add(vod);
+            if (searchRank(vod, target) < threshold) items.add(vod);
         }
         items.sort((a, b) -> Integer.compare(searchRank(a, target), searchRank(b, target)));
         result.setList(items);
         return result;
+    }
+
+    private static int getSearchRelevanceThreshold() {
+        int value = com.github.catvod.utils.Prefers.getInt("search_relevance_threshold", 5);
+        return value < 1 || value > 6 ? 5 : value;
     }
 
     private static int searchRank(@NonNull Vod vod, @NonNull String target) {
@@ -238,7 +248,8 @@ public class SiteApi {
     }
 
     private static String normalizeSearchText(String text) {
-        return TextUtils.isEmpty(text) ? "" : text.toLowerCase().replaceAll("[\\s\\p{Punct}《》【】（）]+", "");
+        if (TextUtils.isEmpty(text)) return "";
+        return NOISE_PATTERN.matcher(text.toLowerCase()).replaceAll("");
     }
 
     @NonNull
