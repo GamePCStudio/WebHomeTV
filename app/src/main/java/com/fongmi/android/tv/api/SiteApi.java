@@ -194,8 +194,7 @@ public class SiteApi {
             String searchContent = hasPage ? site.spider().searchContent(keyword, quick, page) : site.spider().searchContent(keyword, quick);
             SpiderDebug.log("search", searchContent);
             Result result = FamilyFilter.apply(Result.fromJson(searchContent));
-            for (Vod vod : result.getList()) vod.setSite(site);
-            return result;
+            return applySearchRelevance(site, result, keyword);
         } else {
             ArrayMap<String, String> params = new ArrayMap<>();
             params.put("wd", keyword);
@@ -205,9 +204,41 @@ public class SiteApi {
             String searchContent = call(site, params);
             SpiderDebug.log("search", searchContent);
             Result result = FamilyFilter.apply(fetchPic(site, Result.fromType(site.getType(), searchContent)));
-            for (Vod vod : result.getList()) vod.setSite(site);
-            return result;
+            return applySearchRelevance(site, result, keyword);
         }
+    }
+
+    @NonNull
+    private static Result applySearchRelevance(@NonNull Site site, @NonNull Result result, @NonNull String keyword) {
+        String target = normalizeSearchText(keyword);
+        if (target.isEmpty()) return result;
+        List<Vod> items = new ArrayList<>();
+        for (Vod vod : result.getList()) {
+            vod.setSite(site);
+            if (searchRank(vod, target) < 5) items.add(vod);
+        }
+        items.sort((a, b) -> Integer.compare(searchRank(a, target), searchRank(b, target)));
+        result.setList(items);
+        return result;
+    }
+
+    private static int searchRank(@NonNull Vod vod, @NonNull String target) {
+        String name = normalizeSearchText(vod.getName());
+        if (name.equals(target)) return 0;
+        if (name.contains(target)) return 1;
+        if (containsSearchText(target, vod.getTypeName(), vod.getRemarks())) return 2;
+        if (containsSearchText(target, vod.getActor(), vod.getDirector(), vod.getTag())) return 3;
+        if (containsSearchText(target, vod.getContent())) return 4;
+        return 5;
+    }
+
+    private static boolean containsSearchText(@NonNull String target, String... values) {
+        for (String value : values) if (normalizeSearchText(value).contains(target)) return true;
+        return false;
+    }
+
+    private static String normalizeSearchText(String text) {
+        return TextUtils.isEmpty(text) ? "" : text.toLowerCase().replaceAll("[\\s\\p{Punct}《》【】（）]+", "");
     }
 
     @NonNull
