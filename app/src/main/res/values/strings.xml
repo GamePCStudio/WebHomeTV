@@ -608,4 +608,34 @@
         <item>Select subtitle track</item>
     </string-array>
 
+<string name="lut_all">All</string>
+<string name="lut_apply_failed">LUT color has been disabled temporarily</string>
+<string name="lut_close">Close</string>
+<string name="lut_directory">Folder</string>
+<string name="lut_directory_selected">LUT folder selected</string>
+<string name="lut_empty_favorites">No favorite LUT presets</string>
+<string name="lut_empty_presets">No LUT presets</string>
+<string name="lut_favorite">Favorite</string>
+<string name="lut_favorited">Added to favorites</string>
+<string name="lut_import">Import</string>
+<string name="lut_import_failed">LUT import failed</string>
+<string name="lut_imported">LUT preset imported</string>
+<string name="lut_local">Local</string>
+<string name="lut_missing">Preset missing</string>
+<string name="lut_original">Original</string>
+<string name="lut_preview_delay_value">%1$ds</string>
+<string name="lut_reset">Reset</string>
+<string name="lut_select_current_dir">Use this folder</string>
+<string name="lut_strength_value">Strength %1$d%%</string>
+<string name="lut_summary">%1$s · %2$d%%</string>
+<string name="lut_title_value">%1$s · %2$s</string>
+<string name="lut_unavailable_drm">DRM protected videos do not support LUT color</string>
+<string name="lut_unavailable_hdr">HDR/Dolby Vision content does not support LUT color yet</string>
+<string name="lut_unavailable_no_video">Current content has no video track</string>
+<string name="lut_unavailable_player">Current player engine does not support LUT color</string>
+<string name="lut_unavailable_soft_decode">Software decode does not support LUT color</string>
+<string name="lut_unavailable_tunnel">Tunnel mode does not support LUT color</string>
+<string name="lut_unavailable_video_prefer">Extension video decode does not support LUT color</string>
+<string name="lut_unfavorited">Removed from favorites</string>
+<string name="play_lut">LUT</string>
 </resources>

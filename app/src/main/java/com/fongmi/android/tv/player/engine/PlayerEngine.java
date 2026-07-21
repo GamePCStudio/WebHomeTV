@@ -9,6 +9,7 @@ import androidx.media3.common.Tracks;
 
 import com.fongmi.android.tv.bean.Track;
 import com.fongmi.android.tv.player.PlaybackTrace;
+import com.fongmi.android.tv.player.lut.MpvLutShader;
 
 import java.util.Collections;
 import java.util.List;
@@ -85,6 +86,22 @@ public interface PlayerEngine {
 
     default String getPlaybackTraceId() {
         return PlaybackTrace.NONE;
+    }
+
+
+    default boolean supportsVideoEffects() {
+        return false;
+    }
+
+    default boolean supportsNativeLut() {
+        return false;
+    }
+
+    default boolean supportsLut() {
+        return supportsVideoEffects() || supportsNativeLut();
+    }
+
+    default void setNativeLutShader(MpvLutShader shader) {
     }
 
     String getErrorMessage(PlaybackException e);

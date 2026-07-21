@@ -594,4 +594,34 @@
         <item>選擇字幕</item>
     </string-array>
 
+<string name="lut_all">全部</string>
+<string name="lut_apply_failed">LUT 調色已臨時關閉</string>
+<string name="lut_close">關閉</string>
+<string name="lut_directory">目錄</string>
+<string name="lut_directory_selected">LUT 目錄已選擇</string>
+<string name="lut_empty_favorites">暫無收藏 LUT</string>
+<string name="lut_empty_presets">暫無 LUT 預設</string>
+<string name="lut_favorite">收藏</string>
+<string name="lut_favorited">已加入收藏</string>
+<string name="lut_import">導入</string>
+<string name="lut_import_failed">LUT 導入失敗</string>
+<string name="lut_imported">LUT 預設已導入</string>
+<string name="lut_local">本地</string>
+<string name="lut_missing">預設不存在</string>
+<string name="lut_original">原色</string>
+<string name="lut_preview_delay_value">%1$d秒</string>
+<string name="lut_reset">重置</string>
+<string name="lut_select_current_dir">選擇目前目錄</string>
+<string name="lut_strength_value">強度 %1$d%%</string>
+<string name="lut_summary">%1$s · %2$d%%</string>
+<string name="lut_title_value">%1$s · %2$s</string>
+<string name="lut_unavailable_drm">DRM 保護影片不支援 LUT 調色</string>
+<string name="lut_unavailable_hdr">HDR/Dolby Vision 內容暫不支援 LUT 調色</string>
+<string name="lut_unavailable_no_video">當前內容沒有視訊畫面</string>
+<string name="lut_unavailable_player">當前播放器內核不支援 LUT 調色</string>
+<string name="lut_unavailable_soft_decode">軟解不支援 LUT 調色</string>
+<string name="lut_unavailable_tunnel">隧道模式不支援 LUT 調色</string>
+<string name="lut_unavailable_video_prefer">擴展視訊解碼不支援 LUT 調色</string>
+<string name="lut_unfavorited">已取消收藏</string>
+<string name="play_lut">LUT</string>
 </resources>
