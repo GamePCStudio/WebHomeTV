@@ -351,6 +351,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.reset.setOnClickListener(view -> onReset());
         mBinding.control.action.title.setOnClickListener(view -> onTitle());
         mBinding.control.action.player.setOnClickListener(view -> onChoose());
+        mBinding.control.action.player.setOnLongClickListener(view -> onPlayerKernel());
         mBinding.control.action.decode.setOnClickListener(view -> onDecode());
         mBinding.control.action.ending.setOnClickListener(view -> onEnding());
         mBinding.control.action.repeat.setOnClickListener(view -> onRepeat());
@@ -421,6 +422,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setDecode() {
         mBinding.control.action.decode.setText(player().getDecodeText());
+        mBinding.control.action.player.setText(player().getPlayerText());
     }
 
     private void setScale(int scale) {
@@ -856,6 +858,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private boolean onResetToggle() {
         Setting.putReset(Math.abs(Setting.getReset() - 1));
         mBinding.control.action.reset.setText(ResUtil.getStringArray(R.array.select_reset)[Setting.getReset()]);
+        return true;
+    }
+
+    private boolean onPlayerKernel() {
+        mClock.setCallback(null);
+        player().togglePlayer();
+        setDecode();
         return true;
     }
 

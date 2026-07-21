@@ -20,6 +20,16 @@ public class TrackUtil {
         return tracks.getGroups().stream().filter(trackGroup -> trackGroup.getType() == type).mapToInt(trackGroup -> trackGroup.length).sum();
     }
 
+    public static Format selectedFormat(Tracks tracks, int type) {
+        for (Tracks.Group trackGroup : tracks.getGroups()) {
+            if (trackGroup.getType() != type) continue;
+            for (int i = 0; i < trackGroup.length; i++) {
+                if (trackGroup.isTrackSelected(i)) return trackGroup.getTrackFormat(i);
+            }
+        }
+        return null;
+    }
+
     public static void reset(Player player) {
         player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().clearOverrides().build());
     }

@@ -491,6 +491,73 @@
     <string name="times">倍</string>
     <string name="lines">行</string>
 
+<string name="player_kernel">播放器內核</string>
+<string name="mpv_config_apply_selected">套用所選</string>
+<string name="mpv_config_choose_action">選擇建立方式</string>
+<string name="mpv_config_close">關閉</string>
+<string name="mpv_config_create_desc">選擇一種方式開始；名稱可以留空，系統會自動產生。</string>
+<string name="mpv_config_create_title">新增設定</string>
+<string name="mpv_config_current">目前使用：%1$s</string>
+<string name="mpv_config_default">預設</string>
+<string name="mpv_config_default_copy">預設設定副本</string>
+<string name="mpv_config_delete">刪除</string>
+<string name="mpv_config_delete_message">確定刪除「%1$s」嗎？此操作無法復原。</string>
+<string name="mpv_config_delete_title">刪除設定</string>
+<string name="mpv_config_done">完成</string>
+<string name="mpv_config_download_empty">下載到的 mpv.conf 為空</string>
+<string name="mpv_config_edit">編輯</string>
+<string name="mpv_config_editor_edit">編輯設定</string>
+<string name="mpv_config_editor_new">新增設定</string>
+<string name="mpv_config_empty">MPV 設定為空</string>
+<string name="mpv_config_encoding">編碼  UTF-8</string>
+<string name="mpv_config_file_invalid">mpv.conf 檔案無效</string>
+<string name="mpv_config_history">歷史</string>
+<string name="mpv_config_history_empty">暫無 MPV 設定歷史</string>
+<string name="mpv_config_import">匯入</string>
+<string name="mpv_config_import_file">匯入設定檔</string>
+<string name="mpv_config_import_file_desc">從本機選擇已有設定檔</string>
+<string name="mpv_config_import_url">透過 URL 匯入</string>
+<string name="mpv_config_import_url_desc">下載遠端設定並儲存為新設定</string>
+<string name="mpv_config_in_use">使用中</string>
+<string name="mpv_config_local">本機 mpv.conf</string>
+<string name="mpv_config_method">設定方式</string>
+<string name="mpv_config_more">更多操作</string>
+<string name="mpv_config_name">名稱</string>
+<string name="mpv_config_name_example">例如：4K 播放最佳化</string>
+<string name="mpv_config_name_hint">名稱（可選）</string>
+<string name="mpv_config_name_optional">名稱（選填）</string>
+<string name="mpv_config_name_required">請輸入設定名稱</string>
+<string name="mpv_config_new">新增</string>
+<string name="mpv_config_new_name">新名稱</string>
+<string name="mpv_config_no_profiles">暫無設定，點選「新增」建立或匯入設定。</string>
+<string name="mpv_config_profile_missing">設定檔已不存在</string>
+<string name="mpv_config_profile_saved">設定已儲存</string>
+<string name="mpv_config_rename">重新命名</string>
+<string name="mpv_config_rename_title">重新命名設定</string>
+<string name="mpv_config_renamed">設定已重新命名</string>
+<string name="mpv_config_save">儲存</string>
+<string name="mpv_config_saved">MPV 設定已儲存，重新進入播放後生效</string>
+<string name="mpv_config_script_exists">同名腳本已存在</string>
+<string name="mpv_config_script_hint">腳本 URL 或選擇本機腳本</string>
+<string name="mpv_config_scripts_count">%1$d 個腳本</string>
+<string name="mpv_config_stats">行數：%1$d    字元數：%2$d</string>
+<string name="mpv_config_switched">已切換為「%1$s」，重新進入播放後生效</string>
+<string name="mpv_config_target">%1$s · %2$s</string>
+<string name="mpv_config_text">文字設定</string>
+<string name="mpv_config_text_edit">新增文字設定</string>
+<string name="mpv_config_text_edit_desc">開啟編輯器，輸入並儲存設定內容</string>
+<string name="mpv_config_too_large">設定文字不能超過 1 MB</string>
+<string name="mpv_config_untitled">未命名設定</string>
+<string name="mpv_config_url">URL mpv.conf</string>
+<string name="mpv_config_url_hint">https://example.com/mpv.conf</string>
+<string name="mpv_config_url_invalid">mpv.conf URL 無效</string>
+<string name="mpv_config_write_failed">無法寫入 MPV 設定檔</string>
+<string-array name="select_player_kernel">
+        <item>EXO</item>
+        <item>IJK</item>
+        <item>MPV</item>
+    </string-array>
+
     <string-array name="select_decode">
         <item>軟解</item>
         <item>硬解</item>

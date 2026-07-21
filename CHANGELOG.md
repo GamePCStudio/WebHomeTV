@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.5.60 — Multi-kernel player MVP (2026-07-21)
+
+从上游 WebHomeTV 移植 EXO / IJK / MPV 多内核播放能力，默认仍为 EXO；保留 webtv 续播/倍速与安全底线。
+
+### 新增
+
+- **播放器内核**: 设置页可切换 EXO / IJK / MPV；播放页长按“播放器”按钮可快速切换内核
+- **IJK 内核**: 内置 jniLibs，兼容更多容器/协议场景
+- **MPV 内核**: 内置 libmpv assets，提升软解与特殊片源兼容
+- **Media3**: 对齐上游 `1.11.0-alpha01-fongmi`（MediaTitle → MediaEdition）
+
+### 说明
+
+- APK 体积会明显增大（IJK + MPV native）
+- 默认内核仍为 EXO，不影响既有播放连续性
+- 未整包合入上游完整性能面板 / LUT / karaoke 等周边
+
 ## 5.5.59 — Phase 1 enhance features from WebHomeTV (2026-07-21)
 
 从上游 WebHomeTV 移植第一批低风险增强能力，保留 webtv 安全底线（ServerAuth、强制签名、targetSdk 37、FamilyFilter、ConfigImport、Room ≥37）。

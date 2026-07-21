@@ -500,6 +500,73 @@
     <string name="times">times</string>
     <string name="lines">lines</string>
 
+<string name="player_kernel">Player engine</string>
+<string name="mpv_config_apply_selected">Apply selected</string>
+<string name="mpv_config_choose_action">Choose a creation method</string>
+<string name="mpv_config_close">Close</string>
+<string name="mpv_config_create_desc">Choose how to start. Leave the name blank to generate one automatically.</string>
+<string name="mpv_config_create_title">New config</string>
+<string name="mpv_config_current">Currently using: %1$s</string>
+<string name="mpv_config_default">Default</string>
+<string name="mpv_config_default_copy">Default config copy</string>
+<string name="mpv_config_delete">Delete</string>
+<string name="mpv_config_delete_message">Delete “%1$s”? This cannot be undone.</string>
+<string name="mpv_config_delete_title">Delete config</string>
+<string name="mpv_config_done">Done</string>
+<string name="mpv_config_download_empty">Downloaded mpv.conf is empty</string>
+<string name="mpv_config_edit">Edit</string>
+<string name="mpv_config_editor_edit">Edit config</string>
+<string name="mpv_config_editor_new">New config</string>
+<string name="mpv_config_empty">MPV config is empty</string>
+<string name="mpv_config_encoding">Encoding  UTF-8</string>
+<string name="mpv_config_file_invalid">Invalid mpv.conf file</string>
+<string name="mpv_config_history">History</string>
+<string name="mpv_config_history_empty">No MPV config history</string>
+<string name="mpv_config_import">Import</string>
+<string name="mpv_config_import_file">Import config file</string>
+<string name="mpv_config_import_file_desc">Choose an existing config file from this device</string>
+<string name="mpv_config_import_url">Import from URL</string>
+<string name="mpv_config_import_url_desc">Download a remote config and save it as a new profile</string>
+<string name="mpv_config_in_use">In use</string>
+<string name="mpv_config_local">Local mpv.conf</string>
+<string name="mpv_config_method">Config method</string>
+<string name="mpv_config_more">More actions</string>
+<string name="mpv_config_name">Name</string>
+<string name="mpv_config_name_example">For example: 4K playback</string>
+<string name="mpv_config_name_hint">Name (optional)</string>
+<string name="mpv_config_name_optional">Name (optional)</string>
+<string name="mpv_config_name_required">Enter a config name</string>
+<string name="mpv_config_new">New</string>
+<string name="mpv_config_new_name">New name</string>
+<string name="mpv_config_no_profiles">No configs yet. Tap New to create or import one.</string>
+<string name="mpv_config_profile_missing">The config no longer exists</string>
+<string name="mpv_config_profile_saved">Config saved</string>
+<string name="mpv_config_rename">Rename</string>
+<string name="mpv_config_rename_title">Rename config</string>
+<string name="mpv_config_renamed">Config renamed</string>
+<string name="mpv_config_save">Save</string>
+<string name="mpv_config_saved">MPV config saved. Reopen playback to apply it.</string>
+<string name="mpv_config_script_exists">A script with this name already exists</string>
+<string name="mpv_config_script_hint">Script URL or choose local script</string>
+<string name="mpv_config_scripts_count">%1$d scripts</string>
+<string name="mpv_config_stats">Lines: %1$d    Characters: %2$d</string>
+<string name="mpv_config_switched">Now using “%1$s”. Reopen playback to apply it.</string>
+<string name="mpv_config_target">%1$s · %2$s</string>
+<string name="mpv_config_text">Text config</string>
+<string name="mpv_config_text_edit">Create text config</string>
+<string name="mpv_config_text_edit_desc">Open the editor to enter and save config content</string>
+<string name="mpv_config_too_large">Config text must be smaller than 1 MB</string>
+<string name="mpv_config_untitled">Untitled config</string>
+<string name="mpv_config_url">URL mpv.conf</string>
+<string name="mpv_config_url_hint">https://example.com/mpv.conf</string>
+<string name="mpv_config_url_invalid">Invalid mpv.conf URL</string>
+<string name="mpv_config_write_failed">Unable to write the MPV config file</string>
+<string-array name="select_player_kernel">
+        <item>EXO</item>
+        <item>IJK</item>
+        <item>MPV</item>
+    </string-array>
+
     <string-array name="select_decode">
         <item>Soft</item>
         <item>Hard</item>

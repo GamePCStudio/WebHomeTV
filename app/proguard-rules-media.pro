@@ -1,3 +1,8 @@
+-keep class tv.danmaku.ijk.media.player.** { *; }
+-keepclassmembers class tv.danmaku.ijk.media.player.** { *; }
+-keep class is.xyz.mpv.** { *; }
+-keep class androidx.media3.mpvplayer.** { *; }
+
 -dontwarn android.content.res.**
 -dontwarn org.checkerframework.**
 -dontwarn kotlin.annotations.jvm.**

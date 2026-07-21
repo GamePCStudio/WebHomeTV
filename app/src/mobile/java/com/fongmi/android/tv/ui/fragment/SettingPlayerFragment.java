@@ -34,6 +34,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     private String[] caption;
     private String[] render;
     private String[] scale;
+    private String[] kernel;
 
     public static SettingPlayerFragment newInstance() {
         return new SettingPlayerFragment();
@@ -64,10 +65,12 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.renderText.setText((render = ResUtil.getStringArray(R.array.select_render))[PlayerSetting.getRender()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
         mBinding.backgroundText.setText((background = ResUtil.getStringArray(R.array.select_background))[PlayerSetting.getBackground()]);
+        mBinding.kernelText.setText((kernel = ResUtil.getStringArray(R.array.select_player_kernel))[PlayerSetting.getPlayer()]);
     }
 
     @Override
     protected void initEvent() {
+        mBinding.kernel.setOnClickListener(this::onKernel);
         mBinding.ua.setOnClickListener(this::onUa);
         mBinding.aac.setOnClickListener(this::setAAC);
         mBinding.scale.setOnClickListener(this::onScale);
@@ -81,6 +84,14 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.background.setOnClickListener(this::onBackground);
         mBinding.audioDecode.setOnClickListener(this::setAudioDecode);
         mBinding.videoDecode.setOnClickListener(this::setVideoDecode);
+    }
+
+    private void onKernel(View view) {
+        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_kernel).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(kernel, PlayerSetting.getPlayer(), (dialog, which) -> {
+            mBinding.kernelText.setText(kernel[which]);
+            PlayerSetting.putPlayer(which);
+            dialog.dismiss();
+        }).show();
     }
 
     private void onUa(View view) {

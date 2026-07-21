@@ -30,6 +30,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     private String[] caption;
     private String[] render;
     private String[] scale;
+    private String[] kernel;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, SettingPlayerActivity.class));
@@ -48,7 +49,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     protected void initView(Bundle savedInstanceState) {
         setVisible();
         format = new DecimalFormat("0.#");
-        mBinding.render.requestFocus();
+        mBinding.kernel.requestFocus();
         mBinding.uaText.setText(Setting.getUa());
         mBinding.aacText.setText(getSwitch(PlayerSetting.isPreferAAC()));
         mBinding.tunnelText.setText(getSwitch(PlayerSetting.isTunnel()));
@@ -61,10 +62,12 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.renderText.setText((render = ResUtil.getStringArray(R.array.select_render))[PlayerSetting.getRender()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
+        mBinding.kernelText.setText((kernel = ResUtil.getStringArray(R.array.select_player_kernel))[PlayerSetting.getPlayer()]);
     }
 
     @Override
     protected void initEvent() {
+        mBinding.kernel.setOnClickListener(this::setKernel);
         mBinding.ua.setOnClickListener(this::onUa);
         mBinding.aac.setOnClickListener(this::setAAC);
         mBinding.scale.setOnClickListener(this::setScale);
@@ -83,6 +86,12 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     private void setVisible() {
         if (PlayerSetting.getBackground() == 2) PlayerSetting.putBackground(1);
         mBinding.caption.setVisibility(PlayerSetting.hasCaption() ? View.VISIBLE : View.GONE);
+    }
+
+    private void setKernel(View view) {
+        int index = PlayerSetting.nextPlayer(PlayerSetting.getPlayer());
+        mBinding.kernelText.setText(kernel[index]);
+        PlayerSetting.putPlayer(index);
     }
 
     private void onUa(View view) {

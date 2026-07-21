@@ -1,12 +1,14 @@
 package com.fongmi.android.tv.player.engine;
 
+import androidx.media3.common.Format;
+import androidx.media3.common.MediaEdition;
 import androidx.media3.common.MediaMetadata;
-import androidx.media3.common.MediaTitle;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 
 import com.fongmi.android.tv.bean.Track;
+import com.fongmi.android.tv.player.PlaybackTrace;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +33,18 @@ public interface PlayerEngine {
     String getDecodeText();
 
     void start(PlaySpec spec);
+
+    default void start(PlaySpec spec, boolean playWhenReady) {
+        start(spec);
+    }
+
+    default void start(PlaySpec spec, long position, boolean playWhenReady) {
+        start(spec, playWhenReady);
+    }
+
+    default void stop() {
+        getPlayer().stop();
+    }
 
     void setMetadata(MediaMetadata data);
 
@@ -57,8 +71,20 @@ public interface PlayerEngine {
     default void setRepeatOne(boolean repeat) {
     }
 
-    default List<MediaTitle> getCurrentMediaTitles() {
+    default List<MediaEdition> getCurrentMediaEditions() {
         return Collections.emptyList();
+    }
+
+    default boolean selectEdition(MediaEdition edition) {
+        return false;
+    }
+
+    default Format getVideoFormat() {
+        return null;
+    }
+
+    default String getPlaybackTraceId() {
+        return PlaybackTrace.NONE;
     }
 
     String getErrorMessage(PlaybackException e);

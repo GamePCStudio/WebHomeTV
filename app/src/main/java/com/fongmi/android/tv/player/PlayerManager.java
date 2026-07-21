@@ -6,7 +6,7 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
-import androidx.media3.common.MediaTitle;
+import androidx.media3.common.MediaEdition;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
@@ -23,6 +23,8 @@ import com.fongmi.android.tv.bean.Sub;
 import com.fongmi.android.tv.bean.Track;
 import com.fongmi.android.tv.impl.ParseCallback;
 import com.fongmi.android.tv.player.engine.ExoPlayerEngine;
+import com.fongmi.android.tv.player.engine.IjkPlayerEngine;
+import com.fongmi.android.tv.player.engine.MpvPlayerEngine;
 import com.fongmi.android.tv.player.engine.PlaySpec;
 import com.fongmi.android.tv.player.engine.PlayerEngine;
 import com.fongmi.android.tv.setting.DanmakuSetting;
@@ -49,13 +51,15 @@ public class PlayerManager implements ParseCallback {
     private ParseJob parseJob;
     private PlaySpec spec;
     private Player player;
+    private int playerType;
 
     private boolean initTrack;
     private int retry;
 
     public PlayerManager(Callback callback) {
         this.runnable = () -> callback.onError(ResUtil.getString(R.string.error_play_timeout));
-        this.engine = new ExoPlayerEngine(PlayerEngine.HARD, listener);
+        this.playerType = PlayerSetting.getPlayer();
+        this.engine = buildEngine(playerType, PlayerEngine.HARD);
         this.player = engine.getPlayer();
         this.callback = callback;
     }
@@ -78,8 +82,8 @@ public class PlayerManager implements ParseCallback {
         return engine.getCurrentTracks();
     }
 
-    public List<MediaTitle> getCurrentMediaTitles() {
-        return engine.getCurrentMediaTitles();
+    public List<MediaEdition> getCurrentMediaEditions() {
+        return engine.getCurrentMediaEditions();
     }
 
     public MediaItem getCurrentMediaItem() {
@@ -209,10 +213,57 @@ public class PlayerManager implements ParseCallback {
         setMediaItem();
     }
 
-    public void setTitle(MediaTitle title) {
-        if (spec != null) spec.setUrl(spec.getUri().buildUpon().fragment("title=" + title.index).build().toString());
+    public void setTitle(MediaEdition edition) {
+        if (edition == null) return;
+        if (playerType == PlayerSetting.MPV && engine.selectEdition(edition)) return;
+        if (spec != null) spec.setUrl(spec.getUri().buildUpon().fragment("edition=" + edition.index).build().toString());
+        if (engine.selectEdition(edition)) return;
         setMediaItem();
         seekTo(0);
+    }
+
+    public int getPlayerType() {
+        return playerType;
+    }
+
+    public String getPlayerText() {
+        String[] names = ResUtil.getStringArray(R.array.select_player_kernel);
+        int index = Math.min(Math.max(playerType, 0), names.length - 1);
+        return names[index];
+    }
+
+    public void togglePlayer() {
+        switchPlayer(PlayerSetting.nextPlayer(playerType));
+    }
+
+    public void switchPlayer(int type) {
+        type = PlayerSetting.sanitizePlayer(type);
+        if (type == playerType) return;
+        long position = player != null ? Math.max(0, player.getCurrentPosition()) : 0;
+        float speed = getSpeed();
+        boolean repeat = isRepeatOne();
+        int decode = engine != null ? engine.getDecode() : PlayerEngine.HARD;
+        if (player != null) player.removeListener(listener);
+        if (engine != null) engine.release();
+        PlayerSetting.putPlayer(type);
+        playerType = type;
+        engine = buildEngine(playerType, decode);
+        player = engine.getPlayer();
+        engine.setRepeatOne(repeat);
+        setSpeed(speed);
+        callback.onPlayerRebuild(player);
+        if (spec != null && spec.getUrl() != null) {
+            setMediaItem();
+            if (position > 0) seekTo(position);
+        }
+    }
+
+    private PlayerEngine buildEngine(int type, int decode) {
+        return switch (type) {
+            case PlayerSetting.IJK -> new IjkPlayerEngine(decode, listener);
+            case PlayerSetting.MPV -> new MpvPlayerEngine(decode, listener, (w, h) -> videoSize = new VideoSize(w, h));
+            default -> new ExoPlayerEngine(decode, listener);
+        };
     }
 
     public static MediaMetadata buildMetadata(String title, String artist, String artUri) {
@@ -481,7 +532,7 @@ public class PlayerManager implements ParseCallback {
         }
 
         @Override
-        public void onMediaTitlesChanged(@NonNull List<MediaTitle> titles) {
+        public void onMediaEditionsChanged(@NonNull List<MediaEdition> editions) {
             callback.onTitlesChanged();
         }
 

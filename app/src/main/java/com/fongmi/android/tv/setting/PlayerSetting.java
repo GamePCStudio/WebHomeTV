@@ -8,12 +8,62 @@ import com.github.catvod.utils.Prefers;
 
 public class PlayerSetting {
 
+    public static final int EXO = 0;
+    public static final int IJK = 1;
+    public static final int MPV = 2;
+    public static final int RENDER_SURFACE = 0;
+    public static final int RENDER_TEXTURE = 1;
+    public static final int MPV_RENDER_OPENGL = 0;
+    public static final int MPV_RENDER_VULKAN = 1;
+
+    public static int getPlayer() {
+        int player = Prefers.getInt("player", EXO);
+        if (isPlayer(player)) return player;
+        putPlayer(EXO);
+        return EXO;
+    }
+
+    public static void putPlayer(int player) {
+        Prefers.put("player", sanitizePlayer(player));
+    }
+
+    public static boolean isPlayer(int player) {
+        return player == EXO || player == IJK || player == MPV;
+    }
+
+    public static int sanitizePlayer(int player) {
+        return player == IJK || player == MPV ? player : EXO;
+    }
+
+    public static int nextPlayer(int player) {
+        return switch (sanitizePlayer(player)) {
+            case EXO -> IJK;
+            case IJK -> MPV;
+            default -> EXO;
+        };
+    }
+
+    public static int getMpvRender() {
+        int render = Prefers.getInt("mpv_render", MPV_RENDER_OPENGL);
+        return render == MPV_RENDER_VULKAN ? MPV_RENDER_VULKAN : MPV_RENDER_OPENGL;
+    }
+
+    public static void putMpvRender(int render) {
+        Prefers.put("mpv_render", render == MPV_RENDER_VULKAN ? MPV_RENDER_VULKAN : MPV_RENDER_OPENGL);
+    }
+
+    public static boolean isExoEnhanced() {
+        return Prefers.getBoolean("exo_4k_compat");
+    }
+
     public static int getRender() {
-        return Prefers.getInt("render", 0);
+        return Math.min(Math.max(Prefers.getInt("render", RENDER_SURFACE), RENDER_SURFACE), RENDER_TEXTURE);
     }
 
     public static void putRender(int render) {
-        Prefers.put("render", render);
+        int value = Math.min(Math.max(render, RENDER_SURFACE), RENDER_TEXTURE);
+        Prefers.put("render", value);
+        if (isTunnel() && value == RENDER_TEXTURE) Prefers.put("tunnel", false);
     }
 
     public static int getSize() {

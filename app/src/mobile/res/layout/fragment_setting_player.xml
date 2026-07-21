@@ -28,7 +28,34 @@
             android:paddingEnd="16dp"
             android:paddingBottom="16dp">
 
-            <androidx.appcompat.widget.LinearLayoutCompat
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/kernel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/shape_item"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/player_kernel"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/kernelText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    tools:text="EXO" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+<androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/render"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

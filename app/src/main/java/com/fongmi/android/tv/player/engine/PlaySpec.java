@@ -8,6 +8,7 @@ import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.bean.Drm;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Sub;
+import com.fongmi.android.tv.player.PlaybackTrace;
 import com.fongmi.android.tv.player.PlayerHelper;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.UrlUtil;
@@ -28,6 +29,7 @@ public class PlaySpec {
     private String key;
     private String url;
     private Drm drm;
+    private String playbackTraceId = PlaybackTrace.NONE;
 
     public static PlaySpec from(String key, String url, Map<String, String> headers, MediaMetadata metadata) {
         return new PlaySpec(key, url, headers, null, null, null, null, metadata);
@@ -106,6 +108,14 @@ public class PlaySpec {
 
     public void setMetadata(MediaMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    public String getPlaybackTraceId() {
+        return PlaybackTrace.normalize(playbackTraceId);
+    }
+
+    public void setPlaybackTraceId(String playbackTraceId) {
+        this.playbackTraceId = PlaybackTrace.normalize(playbackTraceId);
     }
 
     public PlaySpec checkUa() {
