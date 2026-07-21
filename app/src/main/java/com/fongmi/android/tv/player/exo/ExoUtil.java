@@ -115,7 +115,7 @@ public class ExoUtil {
     }
 
     private static RenderersFactory buildRenderersFactory(int renderMode) {
-        return new NextRenderersFactory(App.get()).setAudioPrefer(PlayerSetting.isAudioPrefer()).setVideoPrefer(PlayerSetting.isVideoPrefer()).setEnableDecoderFallback(true).setExtensionRendererMode(renderMode);
+        return new NextRenderersFactory(App.get()).setEnableDecoderFallback(true).setExtensionRendererMode(renderMode);
     }
 
     private static MediaSource.Factory buildMediaSourceFactory() {

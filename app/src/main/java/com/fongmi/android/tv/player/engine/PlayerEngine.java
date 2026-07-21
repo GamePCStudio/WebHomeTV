@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.player.engine;
 
+import androidx.media3.common.Effect;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaEdition;
 import androidx.media3.common.MediaMetadata;
@@ -8,6 +9,7 @@ import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 
 import com.fongmi.android.tv.bean.Track;
+import com.fongmi.android.tv.player.PlaybackRoute;
 import com.fongmi.android.tv.player.PlaybackTrace;
 import com.fongmi.android.tv.player.lut.MpvLutShader;
 
@@ -43,6 +45,10 @@ public interface PlayerEngine {
         start(spec, playWhenReady);
     }
 
+    default void restart(PlaySpec spec, long position, boolean playWhenReady) {
+        start(spec, position, playWhenReady);
+    }
+
     default void stop() {
         getPlayer().stop();
     }
@@ -57,9 +63,76 @@ public interface PlayerEngine {
 
     void resetTrack();
 
+    default void restoreVideoTrack() {
+    }
+
     boolean haveTrack(int type);
 
     Tracks getCurrentTracks();
+
+    default boolean supportsVideoEffects() {
+        return false;
+    }
+
+    default void setVideoEffects(List<Effect> effects) {
+    }
+
+    default boolean supportsNativeLut() {
+        return false;
+    }
+
+    default boolean supportsLut() {
+        return supportsVideoEffects() || supportsNativeLut();
+    }
+
+    default void setNativeLutShader(MpvLutShader shader) {
+    }
+
+    default Format getVideoFormat() {
+        return null;
+    }
+
+    default PlayerCacheState getCacheState() {
+        return PlayerCacheState.empty();
+    }
+
+    default String getRenderDiagnostics() {
+        return "";
+    }
+
+    default String getRuntimeDiagnostics() {
+        return "";
+    }
+
+    default long getDroppedFrames() {
+        return 0;
+    }
+
+    default String getPlaybackTraceId() {
+        return PlaybackTrace.NONE;
+    }
+
+    default boolean supportsSubtitleStyle() {
+        return false;
+    }
+
+    default String getAudioSpdifCodecs() {
+        return "";
+    }
+
+    default void setSubtitleStyle(float textSize, float position) {
+    }
+
+    default boolean supportsSecondarySubtitle() {
+        return false;
+    }
+
+    default boolean isSecondarySubtitleSelected(Format format) {
+        return false;
+    }
+
+    default void setSecondarySubtitleTrack(Track track) {
+    }
 
     default boolean haveTitle() {
         return false;
@@ -76,32 +149,12 @@ public interface PlayerEngine {
         return Collections.emptyList();
     }
 
-    default boolean selectEdition(MediaEdition edition) {
-        return false;
-    }
-
-    default Format getVideoFormat() {
+    default PlaybackRoute.Resolution getEffectivePlaybackRoute() {
         return null;
     }
 
-    default String getPlaybackTraceId() {
-        return PlaybackTrace.NONE;
-    }
-
-
-    default boolean supportsVideoEffects() {
+    default boolean selectEdition(MediaEdition edition) {
         return false;
-    }
-
-    default boolean supportsNativeLut() {
-        return false;
-    }
-
-    default boolean supportsLut() {
-        return supportsVideoEffects() || supportsNativeLut();
-    }
-
-    default void setNativeLutShader(MpvLutShader shader) {
     }
 
     String getErrorMessage(PlaybackException e);
@@ -110,6 +163,7 @@ public interface PlayerEngine {
 
     enum ErrorAction {
         RECOVERED,
+        RELOAD,
         DECODE,
         FATAL
     }

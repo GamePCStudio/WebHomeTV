@@ -12,6 +12,10 @@ public class SpiderDebug {
 
     private static final String TAG = SpiderDebug.class.getSimpleName();
 
+    public static boolean isEnabled() {
+        return DebugLogStore.isEnabled();
+    }
+
     public static void log(Throwable th) {
         log(TAG, th);
     }

@@ -8,8 +8,9 @@ import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.bean.Drm;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Sub;
-import com.fongmi.android.tv.player.PlaybackTrace;
 import com.fongmi.android.tv.player.PlayerHelper;
+import com.fongmi.android.tv.player.PlaybackRoute;
+import com.fongmi.android.tv.player.PlaybackTrace;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.google.common.net.HttpHeaders;
@@ -25,27 +26,35 @@ public class PlaySpec {
     private List<Danmaku> danmakus;
     private MediaMetadata metadata;
     private List<Sub> subs;
+    private Result parseResult;
     private String format;
     private String key;
+    private PlaybackRoute.Resolution playbackRoute = PlaybackRoute.resolve(null);
+    private String playbackTraceId = PlaybackTrace.NONE;
     private String url;
     private Drm drm;
-    private String playbackTraceId = PlaybackTrace.NONE;
+    private boolean parseSource;
+    private boolean parseUseParse;
 
     public static PlaySpec from(String key, String url, Map<String, String> headers, MediaMetadata metadata) {
         return new PlaySpec(key, url, headers, null, null, null, null, metadata);
     }
 
     public static PlaySpec from(Result result, String key, MediaMetadata metadata) {
-        return new PlaySpec(key, result.getRealUrl(), result.getHeader(), result.getFormat(), result.getDrm(), result.getSubs(), result.getDanmaku(), metadata);
+        return new PlaySpec(key, result.getRealUrl(), result.getHeader(), result.getFormat(), result.getDrm(), result.getSubs(), result.getDanmaku(), metadata).setSource(result, false, false);
     }
 
     public static PlaySpec fromParse(Result result, String key, MediaMetadata metadata) {
-        return new PlaySpec(key, null, null, result.getFormat(), result.getDrm(), result.getSubs(), result.getDanmaku(), metadata);
+        return fromParse(result, key, metadata, false);
+    }
+
+    public static PlaySpec fromParse(Result result, String key, MediaMetadata metadata, boolean useParse) {
+        return new PlaySpec(key, null, null, result.getFormat(), result.getDrm(), result.getSubs(), result.getDanmaku(), metadata).setSource(result, true, useParse);
     }
 
     private PlaySpec(String key, String url, Map<String, String> headers, String format, Drm drm, List<Sub> subs, List<Danmaku> danmakus, MediaMetadata metadata) {
         this.key = key;
-        this.url = url;
+        setUrl(url);
         this.drm = drm;
         this.subs = subs;
         this.format = format;
@@ -68,6 +77,7 @@ public class PlaySpec {
 
     public void setUrl(String url) {
         this.url = url;
+        this.playbackRoute = PlaybackRoute.resolve(url);
     }
 
     public Uri getUri() {
@@ -90,6 +100,29 @@ public class PlaySpec {
         this.format = format;
     }
 
+    public PlaySpec copyWithFormat(String format) {
+        PlaySpec copy = new PlaySpec(key, url, headers, format, drm, subs, danmakus, metadata).setSource(parseResult, parseSource, parseUseParse);
+        copy.playbackRoute = playbackRoute;
+        copy.playbackTraceId = playbackTraceId;
+        return copy;
+    }
+
+    public PlaybackRoute.Resolution getPlaybackRoute() {
+        return playbackRoute;
+    }
+
+    public void refreshPlaybackRoute() {
+        playbackRoute = PlaybackRoute.resolve(url);
+    }
+
+    public String getPlaybackTraceId() {
+        return PlaybackTrace.normalize(playbackTraceId);
+    }
+
+    public void setPlaybackTraceId(String playbackTraceId) {
+        this.playbackTraceId = PlaybackTrace.normalize(playbackTraceId);
+    }
+
     public Drm getDrm() {
         return drm;
     }
@@ -110,12 +143,27 @@ public class PlaySpec {
         this.metadata = metadata;
     }
 
-    public String getPlaybackTraceId() {
-        return PlaybackTrace.normalize(playbackTraceId);
+    public Result getParseResult() {
+        return parseResult;
     }
 
-    public void setPlaybackTraceId(String playbackTraceId) {
-        this.playbackTraceId = PlaybackTrace.normalize(playbackTraceId);
+    public boolean isParseUseParse() {
+        return parseUseParse;
+    }
+
+    public boolean isParseSource() {
+        return parseSource;
+    }
+
+    public boolean canReparse() {
+        return parseResult != null;
+    }
+
+    private PlaySpec setSource(Result result, boolean parseSource, boolean useParse) {
+        this.parseResult = result;
+        this.parseSource = parseSource;
+        this.parseUseParse = useParse;
+        return this;
     }
 
     public PlaySpec checkUa() {

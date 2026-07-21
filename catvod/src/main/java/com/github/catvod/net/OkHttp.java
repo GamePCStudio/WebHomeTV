@@ -328,4 +328,24 @@ public class OkHttp {
     private static class Loader {
         static volatile OkHttp INSTANCE = new OkHttp();
     }
+    public static String string(String url, long timeout) {
+        if (!url.startsWith("http")) return "";
+        try (Response res = newCall(client(timeout), url).execute()) {
+            return res.body().string();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    public static String string(String url, Map<String, String> headers, long timeout) {
+        if (!url.startsWith("http")) return "";
+        try (Response res = newCall(client(timeout), url, headers).execute()) {
+            return res.body().string();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
 }
