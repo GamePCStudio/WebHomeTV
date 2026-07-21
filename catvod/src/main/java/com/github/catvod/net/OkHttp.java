@@ -152,6 +152,10 @@ public class OkHttp {
         return client.newCall(new Request.Builder().url(url).tag(tag).build());
     }
 
+    public static Call newCall(OkHttpClient client, String url, Map<String, String> headers) {
+        return client.newCall(new Request.Builder().url(url).headers(Headers.of(headers)).build());
+    }
+
     public static Call newCall(String url, Map<String, String> headers) {
         return client().newCall(new Request.Builder().url(url).headers(Headers.of(headers)).build());
     }
