@@ -279,7 +279,9 @@ public class HomeWebBridge {
     }
 
     private String stripPush(String url) {
-        return url.regionMatches(true, 0, "push://", 0, 7) ? url.substring(7) : url;
+        if (url == null) return "";
+        String value = url.trim();
+        return value.regionMatches(true, 0, "push://", 0, 7) ? value.substring(7) : value;
     }
 
     private String cacheSet(JsonObject payload) {
@@ -342,13 +344,6 @@ public class HomeWebBridge {
         SpiderDebug.log("webhome", "pan.play type=%s title=%s url=%s", SiteApi.PUSH, playTitle, playUrl);
         App.post(() -> VideoActivity.start(activity, SiteApi.PUSH, playUrl, playTitle, pic));
         return "{}";
-    }
-
-    private String stripPush(String url) {
-        if (url == null) return "";
-        String value = url.trim();
-        if (value.regionMatches(true, 0, "push://", 0, 7)) return value.substring(7);
-        return value;
     }
 
     private String config() {
