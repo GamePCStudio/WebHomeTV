@@ -638,4 +638,13 @@
 <string name="lut_unavailable_video_prefer">Extension video decode does not support LUT color</string>
 <string name="lut_unfavorited">Removed from favorites</string>
 <string name="play_lut">LUT</string>
+<string name="error_play_mpv_hls_unsupported">MPV failed to play this HLS stream. Switch player manually or choose another line.</string>
+<string name="error_play_mpv_load_failed">MPV failed to load media. Check the network or choose another line.</string>
+<string name="error_play_mpv_network_failed">MPV network loading failed. Check the network, headers, or choose another line.</string>
+<string name="error_play_mpv_drm_unsupported">MPV does not support this DRM protected media. Switch player manually or choose another line.</string>
+<string name="error_play_mpv_unexpected_image">MPV loaded an image instead of video. Choose another line.</string>
+<string name="error_play_mpv_no_av">MPV did not find playable audio or video data.</string>
+<string name="error_play_mpv_invalid_data">MPV found invalid media data. Choose another line or switch player manually.</string>
+<string name="error_play_mpv_decode_failed">MPV failed to decode this media. Try switching soft/hard decode or choose another line.</string>
+<string name="error_play_mpv_video_output">MPV failed to initialize video output. Try switching decode mode or reopen playback.</string>
 </resources>
