@@ -47,6 +47,7 @@ import com.fongmi.android.tv.event.ServerEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.player.Source;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.DLNARendererService;
 import com.fongmi.android.tv.service.PlaybackService;
@@ -737,6 +738,11 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     @Override
     public void setToolbar(boolean visible) {
+        if (!Setting.isWebHomeFullscreen()) {
+            webToolbarVisible = true;
+            updateToolbarVisibility(true);
+            return;
+        }
         webToolbarVisible = visible;
         updateToolbarVisibility(visible);
     }

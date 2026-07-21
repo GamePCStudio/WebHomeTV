@@ -33,6 +33,7 @@ import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.impl.FilterListener;
 import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.model.SiteViewModel;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
@@ -445,6 +446,10 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
 
     @Override
     public void setToolbar(boolean visible) {
+        if (!Setting.isWebHomeFullscreen()) {
+            setWebFullscreen(false);
+            return;
+        }
         setWebFullscreen(!visible);
     }
 

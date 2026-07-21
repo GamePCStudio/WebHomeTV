@@ -45,12 +45,20 @@ abstract class BaseConfig {
 
     protected abstract boolean isLoaded();
 
+    protected void beforeLoad() {
+    }
+
+    protected void onLoadSuccess() {
+    }
+
     public synchronized void ensureLoaded() {
         try {
             if (isLoaded()) return;
+            beforeLoad();
             if (config == null) config = defaultConfig();
             Server.get().start();
             load(config);
+            onLoadSuccess();
         } catch (Throwable e) {
             SpiderDebug.log(e);
         }
@@ -81,6 +89,7 @@ abstract class BaseConfig {
     }
 
     public void load(Callback callback) {
+        beforeLoad();
         int id = taskId.incrementAndGet();
         if (future != null && !future.isDone()) future.cancel(true);
         future = Task.submit(() -> loadConfig(id, config, callback));
@@ -94,6 +103,7 @@ abstract class BaseConfig {
             load(config);
             if (taskId.get() != id) return;
             if (config.equals(this.config)) config.update();
+            onLoadSuccess();
             App.post(() -> Notify.show(config.getNotice()));
             App.post(callback::success);
         } catch (Throwable e) {

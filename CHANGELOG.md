@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.5.59 — Phase 1 enhance features from WebHomeTV (2026-07-21)
+
+从上游 WebHomeTV 移植第一批低风险增强能力，保留 webtv 安全底线（ServerAuth、强制签名、targetSdk 37、FamilyFilter、ConfigImport、Room ≥37）。
+
+### 新增
+
+- **网盘检测 (DriveCheck)**: 增强设置开关；`POST /pan/check`（受 ServerAuth 保护）；WebHome SDK `pan.check` / `pan.play`
+- **CSP 预热**: 配置加载后预初始化 Jar CSP 站点，支持默认/自定义站点选择
+- **WebHome 主页全屏**: 可关闭网页强制全屏，保留原生工具栏布局
+- **播放界面剧照**: 设置开关（默认开），为后续剧照背景能力预留偏好
+
+### 保留
+
+- FamilyFilter、配置导入预检、ServerAuth 鉴权、Release 强制签名、Universal APK
+
 ## 5.5.58 — Security audit hardening (2026-07-17)
 
 代码审计发现的高/中/低风险项系统性修复，覆盖远程代码加载、本地服务、WebHome 桥、DLNA、播放器和 CI 构建链。

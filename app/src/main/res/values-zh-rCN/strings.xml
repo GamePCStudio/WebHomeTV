@@ -130,6 +130,16 @@
     <string name="setting_site_health_dialog_sort">站点弹窗排序</string>
     <string name="site_health_clear_done">站点健康记录已清空</string>
     <string name="setting_web_home_extension">WebHome 扩展</string>
+    <string name="setting_web_home_fullscreen">WebHome 主页全屏</string>
+    <string name="setting_csp_warmup">CSP预热</string>
+    <string name="setting_csp_warmup_default">默认</string>
+    <string name="setting_csp_warmup_custom">自定义</string>
+    <string name="setting_csp_warmup_custom_count">自定义 · %1$d 个</string>
+    <string name="setting_csp_warmup_select_site">选择 CSP 站点</string>
+    <string name="setting_csp_warmup_no_site">没有可用的 Jar CSP 站点</string>
+    <string name="setting_csp_warmup_select_required">请至少选择一个 CSP 站点</string>
+    <string name="setting_playback_artwork_wall">播放界面剧照</string>
+    <string name="setting_drive_check">网盘检测</string>
     <string name="setting_family_filter">家庭过滤</string>
     <string name="setting_family_filter_summary_off">禁用</string>
     <string name="setting_family_filter_summary_on">启用 · %1$d 个关键词</string>

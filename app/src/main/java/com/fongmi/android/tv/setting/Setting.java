@@ -17,8 +17,21 @@ import com.fongmi.android.tv.utils.WebViewUtil;
 import com.github.catvod.crawler.DebugLogStore;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Prefers;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 public class Setting {
+
+    private static final Type STRING_LIST = new TypeToken<List<String>>() {}.getType();
+
+    public static final int CSP_WARMUP_DISABLED = 0;
+    public static final int CSP_WARMUP_DEFAULT = 1;
+    public static final int CSP_WARMUP_CUSTOM = 2;
 
     public static String getDoh() {
         return Prefers.getString("doh");
@@ -130,6 +143,80 @@ public class Setting {
 
     public static void putFamilyFilterPass(String pass) {
         Prefers.put("family_filter_pass", pass);
+    }
+
+    public static boolean isDriveCheck() {
+        return Prefers.getBoolean("drive_check", true);
+    }
+
+    public static void putDriveCheck(boolean driveCheck) {
+        Prefers.put("drive_check", driveCheck);
+    }
+
+    public static boolean isWebHomeFullscreen() {
+        return Prefers.getBoolean("web_home_fullscreen", true);
+    }
+
+    public static void putWebHomeFullscreen(boolean fullscreen) {
+        Prefers.put("web_home_fullscreen", fullscreen);
+    }
+
+    public static boolean isPlaybackArtworkWall() {
+        return Prefers.getBoolean("playback_artwork_wall", true);
+    }
+
+    public static void putPlaybackArtworkWall(boolean artworkWall) {
+        Prefers.put("playback_artwork_wall", artworkWall);
+    }
+
+    public static boolean isCspWarmup() {
+        return getCspWarmupMode() != CSP_WARMUP_DISABLED;
+    }
+
+    public static void putCspWarmup(boolean warmup) {
+        if (warmup) {
+            Prefers.put("csp_warmup", true);
+            if (getCspWarmupSelectedMode() == CSP_WARMUP_DISABLED) Prefers.put("csp_warmup_mode", CSP_WARMUP_DEFAULT);
+        } else {
+            Prefers.put("csp_warmup", false);
+        }
+    }
+
+    public static int getCspWarmupMode() {
+        if (!Prefers.getBoolean("csp_warmup")) return CSP_WARMUP_DISABLED;
+        return getCspWarmupSelectedMode();
+    }
+
+    public static int getCspWarmupSelectedMode() {
+        int mode = Prefers.getInt("csp_warmup_mode", CSP_WARMUP_DEFAULT);
+        return mode == CSP_WARMUP_CUSTOM ? CSP_WARMUP_CUSTOM : CSP_WARMUP_DEFAULT;
+    }
+
+    public static void putCspWarmupMode(int mode) {
+        if (mode == CSP_WARMUP_DISABLED) {
+            Prefers.put("csp_warmup", false);
+        } else {
+            Prefers.put("csp_warmup", true);
+            Prefers.put("csp_warmup_mode", mode == CSP_WARMUP_CUSTOM ? CSP_WARMUP_CUSTOM : CSP_WARMUP_DEFAULT);
+        }
+    }
+
+    public static List<String> getCspWarmupSites() {
+        try {
+            List<String> keys = App.gson().fromJson(Prefers.getString("csp_warmup_sites", "[]"), STRING_LIST);
+            if (keys == null) return Collections.emptyList();
+            List<String> result = new ArrayList<>();
+            for (String key : keys) if (key != null && !key.trim().isEmpty() && !result.contains(key.trim())) result.add(key.trim());
+            return result;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public static void putCspWarmupSites(List<String> keys) {
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        if (keys != null) for (String key : keys) if (key != null && !key.trim().isEmpty()) result.add(key.trim());
+        Prefers.put("csp_warmup_sites", App.gson().toJson(result));
     }
 
     public static boolean isIncognito() {

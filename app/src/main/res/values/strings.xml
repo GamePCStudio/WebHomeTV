@@ -131,6 +131,16 @@
     <string name="setting_site_health_dialog_sort">Sort site dialog</string>
     <string name="site_health_clear_done">Site health data cleared</string>
     <string name="setting_web_home_extension">WebHome extensions</string>
+    <string name="setting_web_home_fullscreen">WebHome homepage fullscreen</string>
+    <string name="setting_csp_warmup">CSP warmup</string>
+    <string name="setting_csp_warmup_default">Default</string>
+    <string name="setting_csp_warmup_custom">Custom</string>
+    <string name="setting_csp_warmup_custom_count">Custom · %1$d sites</string>
+    <string name="setting_csp_warmup_select_site">Select CSP sites</string>
+    <string name="setting_csp_warmup_no_site">No jar CSP site available</string>
+    <string name="setting_csp_warmup_select_required">Select at least one CSP site</string>
+    <string name="setting_playback_artwork_wall">Playback stills</string>
+    <string name="setting_drive_check">Drive link check</string>
     <string name="setting_family_filter">Family filter</string>
     <string name="setting_family_filter_summary_off">Disabled</string>
     <string name="setting_family_filter_summary_on">Enabled · %1$d keywords</string>
