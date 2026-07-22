@@ -22,6 +22,7 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.server.impl.Process;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.utils.FileUtil;
+import com.fongmi.android.tv.utils.LoginStateSync;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ProgressRequestBody;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -241,10 +242,12 @@ public class Action implements Process {
         try {
             SyncOptions options = SyncOptions.objectFrom(params.get("options"));
             SyncFiles.Archive archive = options.isSpider() ? SyncFiles.createArchive(SyncFiles.getPaths(options.getPaths())) : null;
+            LoginStateSync.Archive loginArchive = options.isLoginState() ? LoginStateSync.createArchive() : null;
             try {
-                return post(device, "backup", getBackupBody(options, archive));
+                return post(device, "backup", getBackupBody(options, archive, loginArchive));
             } finally {
                 if (archive != null) archive.delete();
+                if (loginArchive != null) loginArchive.delete();
             }
         } catch (Exception e) {
             App.post(() -> Notify.show(e.getMessage()));
@@ -252,8 +255,8 @@ public class Action implements Process {
         }
     }
 
-    private RequestBody getBackupBody(SyncOptions options, SyncFiles.Archive archive) {
-        if (archive == null) {
+    private RequestBody getBackupBody(SyncOptions options, SyncFiles.Archive archive, LoginStateSync.Archive loginArchive) {
+        if (archive == null && loginArchive == null) {
             FormBody.Builder body = new FormBody.Builder();
             body.add("options", options.toString());
             body.add("backup", Backup.create(options).toString());
@@ -262,7 +265,12 @@ public class Action implements Process {
         MultipartBody.Builder body = new MultipartBody.Builder().setType(MultipartBody.FORM);
         body.addFormDataPart("options", options.toString());
         body.addFormDataPart("backup", Backup.create(options).toString());
-        body.addFormDataPart(SyncFiles.PART_NAME, archive.getFile().getName(), new ProgressRequestBody(archive.getFile(), ZIP, null));
+        if (archive != null) {
+            body.addFormDataPart(SyncFiles.PART_NAME, archive.getFile().getName(), new ProgressRequestBody(archive.getFile(), ZIP, null));
+        }
+        if (loginArchive != null) {
+            body.addFormDataPart(LoginStateSync.PART_NAME, loginArchive.getFile().getName(), new ProgressRequestBody(loginArchive.getFile(), ZIP, null));
+        }
         return body.build();
     }
 
@@ -273,6 +281,16 @@ public class Action implements Process {
             File archive = new File(files.get(SyncFiles.PART_NAME));
             try {
                 SyncFiles.restoreArchive(archive);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            } finally {
+                Path.clear(archive);
+            }
+        }
+        if (options.isLoginState() && files.containsKey(LoginStateSync.PART_NAME)) {
+            File archive = new File(files.get(LoginStateSync.PART_NAME));
+            try {
+                LoginStateSync.restoreArchive(archive);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             } finally {

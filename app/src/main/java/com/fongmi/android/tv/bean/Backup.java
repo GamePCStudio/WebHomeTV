@@ -146,6 +146,7 @@ public class Backup {
     private static boolean include(String key, SyncOptions options) {
         if (key.startsWith("cache_")) return options.isWebHome() || options.isSpider();
         if (key.startsWith("config_")) return options.isConfig();
+        if (key.startsWith("login_state_")) return options.isLoginState();
         if ("keyword".equals(key) || "hot".equals(key)) return options.isSearch();
         if (isAppPref(key)) return options.isSettings();
         return options.isSpider();

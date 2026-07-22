@@ -20,12 +20,14 @@ import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.CspWarmupDialog;
 import com.fongmi.android.tv.ui.dialog.CustomCspDialog;
 import com.fongmi.android.tv.ui.dialog.DebugLogDialog;
+import com.fongmi.android.tv.ui.dialog.LoginStateLearnDialog;
 import com.fongmi.android.tv.ui.dialog.ManagePageDialog;
 import com.fongmi.android.tv.ui.dialog.OneKeySyncDialog;
 import com.fongmi.android.tv.ui.dialog.ShellProxyDialog;
 import com.fongmi.android.tv.ui.dialog.SiteHealthDialog;
 import com.fongmi.android.tv.ui.dialog.WebHomeExtensionDialog;
 import com.fongmi.android.tv.utils.FamilyFilter;
+import com.fongmi.android.tv.utils.LoginStateSync;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
 
@@ -68,6 +70,7 @@ public class SettingEnhanceFragment extends BaseFragment {
         mBinding.shellProxy.setOnLongClickListener(v -> false);
         mBinding.shellProxyConfig.setVisibility(View.GONE);
         mBinding.customCsp.setOnClickListener(view -> CustomCspDialog.show(this, this::setText));
+        mBinding.loginState.setOnClickListener(view -> LoginStateLearnDialog.show(this, this::setText));
         mBinding.oneKeySync.setOnClickListener(v -> OneKeySyncDialog.create().show(requireActivity()));
     }
 
@@ -87,6 +90,7 @@ public class SettingEnhanceFragment extends BaseFragment {
         CustomCspSetting.Registry registry = CustomCspSetting.load();
         CustomCspSetting.Count count = CustomCspSetting.count();
         mBinding.customCspText.setText(getSwitch(registry.isEnabled()) + " · " + getString(R.string.setting_custom_csp_count, count.active(), count.enabled()));
+        mBinding.loginStateText.setText(getString(LoginStateSync.hasLearningSnapshot() ? R.string.login_state_learning_count : R.string.login_state_count, LoginStateSync.learnedCount(), LoginStateSync.pendingPaths().size()));
     }
 
     private String getCspWarmupText() {

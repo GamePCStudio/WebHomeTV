@@ -1,5 +1,23 @@
 # Changelog
 
+## 5.5.61 — Phase 3A login-state learning (2026-07-22)
+
+从上游 WebHomeTV 移植登录态学习与一键同步，保留 webtv 安全底线；GitCloud 完整能力仍属后续阶段。
+
+### 新增
+
+- **登录态学习**: 增强设置入口，学习 Cookie / 登录态文件路径（开始学习 → 登录网盘 → 完成学习）
+- **路径管理**: 目录树勾选、待确认候选、文本预览/编辑
+- **一键同步**: 新增「登录态」勾选项，推送/拉取时打包与恢复登录态 ZIP
+- **本地管理页同步**: Manage/Action 推送端与接收端支持 `loginStateFiles`
+- **加密 Token 存储**: 最小 `GitCloudTokenStore`（Android Keystore AES/GCM），供登录态 token 导入导出
+
+### 说明
+
+- 仅移植登录态学习，不引入完整 GitCloud / Remote Trust / 观影同步
+- 登录态默认勾选同步；路径与 token 不落明文日志
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37、Room ≥37 均保留
+
 ## 5.5.60 — Multi-kernel player MVP (2026-07-21)
 
 从上游 WebHomeTV 移植 EXO / IJK / MPV 多内核播放能力，默认仍为 EXO；保留 webtv 续播/倍速与安全底线。

@@ -19,6 +19,7 @@ import com.fongmi.android.tv.setting.CustomCspSetting;
 import com.fongmi.android.tv.setting.ProxySetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.ProgressRequestBody;
+import com.fongmi.android.tv.utils.LoginStateSync;
 import com.fongmi.android.tv.utils.ScanTask;
 import com.fongmi.android.tv.utils.SyncFiles;
 import com.github.catvod.crawler.SpiderDebug;
@@ -467,11 +468,13 @@ public class Manage implements Process {
         SyncOptions options = SyncOptions.objectFrom(params.get("options"));
         if (params.containsKey("paths")) options.paths(params.get("paths"));
         SyncFiles.Archive archive = null;
+        LoginStateSync.Archive loginArchive = null;
         try {
             if (!pull && options.isSpider()) archive = SyncFiles.createArchive(SyncFiles.getPaths(options.getPaths()));
-            RequestBody body = buildSyncBody(pull, options, archive);
+            if (!pull && options.isLoginState()) loginArchive = LoginStateSync.createArchive();
+            RequestBody body = buildSyncBody(pull, options, archive, loginArchive);
             String remote = remoteUrl(device, "/action?do=sync&mode=" + (pull ? "2" : "1") + "&type=backup");
-            SpiderDebug.log("sync", "manage start direction=%s device=%s options=%s archive=%s", pull ? "pull" : "push", device, options, archive == null ? "none" : archive.getFile().getAbsolutePath());
+            SpiderDebug.log("sync", "manage start direction=%s device=%s options=%s archive=%s loginArchive=%s", pull ? "pull" : "push", device, options, archive == null ? "none" : archive.getFile().getAbsolutePath(), loginArchive == null ? "none" : loginArchive.getFile().getAbsolutePath());
             try (okhttp3.Response response = OkHttp.client(Constant.TIMEOUT_SYNC_TRANSFER).newCall(new Request.Builder().url(remote).post(body).build()).execute()) {
                 if (!response.isSuccessful()) {
                     ResponseBody responseBody = response.body();
@@ -488,13 +491,19 @@ public class Manage implements Process {
                 object.addProperty("rawSize", archive.getRawSize());
                 object.addProperty("zipSize", archive.getZipSize());
             }
+            if (loginArchive != null) {
+                object.addProperty("loginStateFiles", loginArchive.getCount());
+                object.addProperty("loginStateRawSize", loginArchive.getRawSize());
+                object.addProperty("loginStateZipSize", loginArchive.getZipSize());
+            }
             return json(object);
         } finally {
             if (archive != null) archive.delete();
+            if (loginArchive != null) loginArchive.delete();
         }
     }
 
-    private RequestBody buildSyncBody(boolean pull, SyncOptions options, SyncFiles.Archive archive) {
+    private RequestBody buildSyncBody(boolean pull, SyncOptions options, SyncFiles.Archive archive, LoginStateSync.Archive loginArchive) {
         if (pull) {
             FormBody.Builder body = new FormBody.Builder();
             body.add("options", options.toString());
@@ -502,7 +511,7 @@ public class Manage implements Process {
             body.add("device", Device.get().toString());
             return body.build();
         }
-        if (archive == null) {
+        if (archive == null && loginArchive == null) {
             FormBody.Builder body = new FormBody.Builder();
             body.add("options", options.toString());
             body.add("force", "false");
@@ -513,7 +522,12 @@ public class Manage implements Process {
         body.addFormDataPart("options", options.toString());
         body.addFormDataPart("force", "false");
         body.addFormDataPart("backup", Backup.create(options).toString());
-        body.addFormDataPart(SyncFiles.PART_NAME, archive.getFile().getName(), new ProgressRequestBody(archive.getFile(), ZIP, null));
+        if (archive != null) {
+            body.addFormDataPart(SyncFiles.PART_NAME, archive.getFile().getName(), new ProgressRequestBody(archive.getFile(), ZIP, null));
+        }
+        if (loginArchive != null) {
+            body.addFormDataPart(LoginStateSync.PART_NAME, loginArchive.getFile().getName(), new ProgressRequestBody(loginArchive.getFile(), ZIP, null));
+        }
         return body.build();
     }
 
