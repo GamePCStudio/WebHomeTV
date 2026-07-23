@@ -40,7 +40,9 @@ jobs:
           chmod +x ./gradlew
           ./gradlew \
             :app:assembleMobileArm64_v8aDebug \
+            :app:assembleMobileArmeabi_v7aDebug \
             :app:assembleLeanbackArm64_v8aDebug \
+            :app:assembleLeanbackArmeabi_v7aDebug \
             --no-daemon
 
       - name: Collect APKs
