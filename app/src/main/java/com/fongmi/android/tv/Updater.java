@@ -38,7 +38,6 @@ import java.util.concurrent.TimeoutException;
 public class Updater implements Download.Callback, UpdateListener {
 
     private static final String DEFAULT_RELEASE_NOTES = "手动触发 GitHub Actions 构建发布。";
-    private static final String SOURCE_CNB = "cnb";
     private static final String SOURCE_GITHUB = "github";
     private static final long UPDATE_CHECK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long GITHUB_REQUEST_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(4);
@@ -141,11 +140,7 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     private Update getUpdate(String channel) {
-        Update cnb = readUpdate(channel, Github.getCnbAsset(getManifestName(channel)), SOURCE_CNB);
-        Update github = Update.CHANNEL_BETA.equals(channel) ? getGithubBetaUpdate(channel) : getGithubStableUpdate(channel);
-        Update update = newer(cnb, github);
-        attachDownloadFallback(update, cnb, github);
-        return update;
+        return Update.CHANNEL_BETA.equals(channel) ? getGithubBetaUpdate(channel) : getGithubStableUpdate(channel);
     }
 
     private Update getGithubStableUpdate(String channel) {
@@ -227,29 +222,6 @@ public class Updater implements Download.Callback, UpdateListener {
         return update;
     }
 
-    private Update newer(Update first, Update second) {
-        if (first == null || !first.hasManifest()) return second == null ? Update.empty(Update.CHANNEL_STABLE) : second;
-        if (second == null || !second.hasManifest()) return first;
-        if (second.code != first.code) return second.code > first.code ? second : first;
-        return compareName(second.name, first.name) > 0 ? second : first;
-    }
-
-    private void attachDownloadFallback(Update selected, Update cnb, Update github) {
-        if (selected == null || cnb == null || github == null) return;
-        if (!cnb.hasManifest() || !github.hasManifest()) return;
-        if (!sameRelease(cnb, github)) return;
-        String fallback = selected == cnb ? github.apkUrl : cnb.apkUrl;
-        if (!TextUtils.isEmpty(fallback) && !fallback.equals(selected.apkUrl)) selected.fallbackApkUrl = fallback;
-    }
-
-    private boolean sameRelease(Update first, Update second) {
-        return first.code == second.code && compareName(first.name, second.name) == 0;
-    }
-
-    private int compareName(String left, String right) {
-        return AppVersion.stripPrefix(left).compareToIgnoreCase(AppVersion.stripPrefix(right));
-    }
-
     private String normalizeText(String text) {
         if (TextUtils.isEmpty(text)) return "";
         return text
@@ -278,7 +250,7 @@ public class Updater implements Download.Callback, UpdateListener {
         String apk = TextUtils.isEmpty(update.apk) ? getDefaultApkName(update.channel) : update.apk;
         if (SOURCE_GITHUB.equals(source) && !TextUtils.isEmpty(update.name)) return Github.getGithubReleaseAsset(update.name, getFileName(apk, update.channel));
         if (apk.startsWith("http://") || apk.startsWith("https://")) return apk;
-        return Github.getCnbAsset(apk);
+        return apk;
     }
 
     private String getFileName(String value, String channel) {
