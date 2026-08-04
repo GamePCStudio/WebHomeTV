@@ -1,7 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">WebHTV</string>
+    <string name="app_name">课堂学习</string>
 
     <!-- Live -->
     <string name="live_pass">Pass</string>
