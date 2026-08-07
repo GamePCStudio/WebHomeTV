@@ -10,7 +10,7 @@ jobs:
   debug-build:
     name: Build debug APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
 
     steps:
       - name: Checkout
@@ -39,8 +39,10 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew \
-            :app:assembleLeanbackArm64_v8aDebug \
             :app:assembleMobileArm64_v8aDebug \
+            :app:assembleMobileArmeabi_v7aDebug \
+            :app:assembleLeanbackArm64_v8aDebug \
+            :app:assembleLeanbackArmeabi_v7aDebug \
             --no-daemon
 
       - name: Collect APKs
