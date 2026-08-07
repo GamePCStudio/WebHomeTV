@@ -31,17 +31,16 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
+      - name: DIAG list available SDK (stable + channel 3)
         run: |
-          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
+          echo "=== sdkmanager version ==="; sdkmanager --version
+          echo "=== STABLE platforms (android-3x) ==="; sdkmanager --list 2>/dev/null | grep -iE 'platforms;android-3[0-9]' | head -40
+          echo "=== STABLE build-tools (3x) ==="; sdkmanager --list 2>/dev/null | grep -iE 'build-tools;[0-9]' | head -40
+          echo "=== CHANNEL3 platforms (android-3x) ==="; sdkmanager --list --channel=3 2>/dev/null | grep -iE 'platforms;android-3[0-9]' | head -40
+          echo "=== CHANNEL3 build-tools (3x) ==="; sdkmanager --list --channel=3 2>/dev/null | grep -iE 'build-tools;[0-9]' | head -40
 
-      - name: Build debug APKs
-        run: |
-          chmod +x ./gradlew
-          ./gradlew \
-            :app:assembleLeanbackArm64_v8aDebug \
-            :app:assembleMobileArm64_v8aDebug \
-            --no-daemon --build-cache
+      - name: Build debug APKs (skipped during diag)
+        run: echo "DIAG ONLY - build skipped"
 
       - name: Collect APKs
         run: |
