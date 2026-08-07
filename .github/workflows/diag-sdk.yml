@@ -1,0 +1,25 @@
+name: Diag SDK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: List available platforms / build-tools
+        run: |
+          echo "=== sdkmanager version ==="
+          sdkmanager --version
+          echo "=== platforms (android-3x) ==="
+          sdkmanager --list 2>/dev/null | grep -iE 'platforms;android-3[0-9]' | head -40
+          echo "=== build-tools (3x) ==="
+          sdkmanager --list 2>/dev/null | grep -iE 'build-tools;[0-9]' | head -40
+          echo "=== cmdline-tools ==="
+          sdkmanager --list 2>/dev/null | grep -iE 'cmdline-tools' | head -10
