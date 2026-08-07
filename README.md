@@ -13,7 +13,7 @@ WebHomeTV 是基于 [FongMi](https://github.com/FongMi/TV) / CatVod 生态二次
 - **一键同步**:在同一局域网设备间同步配置、站源数据(Jar/脚本保存数据)、登录态、WebHome 数据、搜索记录、观看历史、收藏和应用设置,每项可单独勾选。
 - **站点注入**:添加自定义 WebHome 或通用 CSP 站点,主列表显示核心摘要和快捷操作,新增/修改在独立表单中维护启用状态、插入位置、首页、搜索和换源行为;顶部“识别”可粘贴单个或多个松散站点 JSON 片段并自动归类追加;WebHome 站点级扩展可直接填写扩展 URL / JSON,也可选择本地 JS/CSS/JSON 自动生成配置。
 - **WebHome 扩展**:给真实网页注入用户脚本,主列表显示扩展摘要和状态,新增/修改在独立表单中配置本地文件、远程链接/manifest、直接代码、表单生成或 JSON;匹配范围默认从当前点播配置的 WebHome 站点弹窗多选,也可切换到 CSP key 正则;提供调试工作台用于 Web 预览、Console/Network/Elements 和代码保存预览。
-- **观影记录同步**:增强功能中提供独立总览页,包含总开关、本机 API 修改开关、远端同步源和 Webhook 上报。爬虫可通过 `/api/playback/current` 读取当前播放记录,也可在用户开启修改后调用 `/api/playback/progress`、`/api/playback/progress/batch` 或 `/api/playback/progress/delete` 写入/清理本地进度;App 也可从用户配置的远端 API 拉取批量记录合并到本地历史。完整协议见 `webhome-devkit/docs/应用完整开发文档.md` 的“观影记录同步”章节。
+- **观影记录同步**:增强功能中提供独立总览页,包含总开关、本机 API 修改开关、远端同步源和 Webhook 上报。爬虫可通过 `/api/playback/current` 读取当前播放记录,也可在用户开启修改后调用 `/api/playback/progress`、`/api/playback/progress/batch` 或 `/api/playback/progress/delete` 写入/清理本地进度;App 也可从用户配置的远端 API 拉取批量记录合并到本地历史,并通过删除墓碑同步清理记录。仓库内置的 Cloudflare、Deno、Vercel、Go、Rust 五种服务端都可用同一 URL 同时承接 Webhook 和增量拉取，分别使用 Durable Object SQLite、Deno KV、Redis REST 或本地原子文件持久化。完整协议见 `webhome-devkit/docs/应用完整开发文档.md` 的“观影记录同步”章节。
 - **登录态学习**:用户手动开启后学习 Cookie、Token、接口 Jar 网盘登录文件等登录态路径,待确认项可在管理页查看/编辑,并可参与一键同步。
 - **APP 代理**:配置代理地址和域名匹配规则,可按当前站点自动建议代理域名,用于改善特定站点、接口或播放链路的网络访问。
 - **调试日志**:本机和局域网日志查看入口,便于排查播放、代理、站源和 WebHome 相关问题。
@@ -77,8 +77,9 @@ WebHome 主页、扩展、模板、示例和 AI skills 统一放在 [webhome-dev
 ### 环境要求
 
 - JDK 21。不要使用 JDK 17；当前 `sourceCompatibility` / `targetCompatibility` 均为 Java 21。
+- Python 3.10。Chaquo 运行时和构建时 Python 均固定为 3.10，仅安装 Python 3.11/3.12/3.13 会失败。
 - Android SDK Platform 37 和 Build Tools 37.0.0。当前 `compileSdk=37`、`minSdk=24`、`targetSdk=28`。
-- Android NDK 28.2.13676358。普通 Gradle 打包会直接使用仓库内置的 MPV native assets 和 `libplayer.so`。`scripts/build_mpv_player_jni.sh` 只重建 JNI 桥接库 `libplayer.so`，不会重编 `libmpv.so`、FFmpeg 或 libplacebo。
+- Android NDK 28.2.13676358 仅用于重建 MPV/IJK/JNI/DVD native。普通 Gradle 打包直接使用仓库已提交二进制，不要求安装 NDK。`scripts/build_mpv_player_jni.sh` 只重建 JNI 桥接库 `libplayer.so`，不会重编 `libmpv.so`、FFmpeg 或 libplacebo。
 - 使用仓库内置 Gradle Wrapper：Gradle 9.5.1，Android Gradle Plugin 9.2.1。
 - 能访问 Maven Central、Google Maven、Gradle Plugin Portal 和 JitPack。仓库内已带定制 Media3、nextlib 和本地 AAR，但普通 Android 依赖仍需要联网下载。
 
@@ -107,14 +108,13 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"
 
 Linux 常见路径是 `$HOME/Android/Sdk`，Windows 使用 Android Studio 打开项目或创建 `local.properties`，内容类似 `sdk.dir=C\:\\Users\\你的用户名\\AppData\\Local\\Android\\Sdk`。
 
-如 SDK 未安装 API 37/Build Tools/NDK，可用 Android Studio SDK Manager 安装，或使用命令行工具：
+如 SDK 未安装 API 37、Build Tools 或 Platform Tools，可用 Android Studio SDK Manager 安装，或使用命令行工具：
 
 ```bash
 "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
   "platform-tools" \
   "platforms;android-37.0" \
-  "build-tools;37.0.0" \
-  "ndk;28.2.13676358"
+  "build-tools;37.0.0"
 yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
 ```
 
@@ -131,7 +131,7 @@ bash gradlew :app:assembleMobileArm64_v8aDebug :app:assembleLeanbackArmeabi_v7aD
 
 ```bash
 git fetch origin
-git switch feature/android-mpv-player
+git switch beta
 bash gradlew clean
 bash gradlew :app:assembleMobileArm64_v8aDebug
 ```
@@ -199,10 +199,10 @@ bash gradlew :app:assembleMobileArm64_v8aDebug :app:assembleLeanbackArmeabi_v7aD
 - `libmpv.so`、FFmpeg（codec/device/filter/format/util/swresample/swscale）、静态链接进 MPV 的 libplacebo、curl、nghttp2、MbedTLS 和 `libc++_shared.so` 必须按同一 ABI、同一 lock 成套构建，不能再混用旧 `libmpv.so` 与新依赖作为正式方案。
 - 当前已提交 assets 使用 MPV `94335ab87ab225ca3e36e0faeac831639d3e1d4e`、FFmpeg n8.0.3 `8ae0b34901ba60a802f183ee75a250a9fc3e09a5`、libplacebo `a7a18af88ff0a17c04840dcb3246047bb6b46df3`（7.371.0）、curl 8.21.0、nghttp2 1.69.0 和 NDK r28c。curl 使用 MbedTLS，只启用 HTTP/HTTPS 与 HTTP/2，不包含 HTTP/3、ngtcp2、nghttp3 或 quiche。FFmpeg 8.1.2 组合在 vivo Android 15 播放初始化时可触发 `pthread_mutex_lock called on a destroyed mutex`，因此没有进入正式 lock。
 - MPV 原生构建额外锁定应用 `FongMi/mpv@fd679c812149fe1f3e246897b1015ae109da7c74` 的 Vulkan/MediaCodec 互操作实现，通过 AImageReader 和 Android Hardware Buffer 将 MediaCodec 输出留在 GPU 链路，设备扩展满足时可使 `hwdec-current=mediacodec` 与 `gpu-next/androidvk/Vulkan` 同时生效；能力不足时仍允许回退 `mediacodec-copy`。
-- 固定 MPV 源码还应用 `third_party/patches/mpv-aimagereader-transient-buffer.patch`：把 `AMEDIA_IMGREADER_NO_BUFFER_AVAILABLE`（日志值通常为 `-30001`）和短暂 acquire fence 未就绪视为可恢复的暂态，不再阻塞渲染线程100ms或把无新帧误报为硬失败；其他 AImageReader 错误仍保持失败处理。
+- 固定 MPV 源码还应用 `third_party/patches/mpv-aimagereader-transient-buffer.patch`：`NO_BUFFER_AVAILABLE` 会在单次映射的100ms总截止时间内按回调序列重试；Vulkan设备优先把 acquire `sync_fd` 临时导入 semaphore 交给GPU等待，不支持时才使用有界CPU等待。seek/flush期间若已经有有效同步帧，最多短暂保留4次上一帧以避免GPU错误色块；首帧或持续失败仍返回错误，不会无限伪造映射成功。
 - curl 与 nghttp2 静态链接进 `libmpv.so`，APK 不新增独立网络 `.so`。它增强 MPV 直接远程 HTTP/HTTPS 输入；App 自己处理的本地 HLS 代理、`stream_cb` 和 FFmpeg/lavf 路径仍按各自实现工作，不能把启用 curl 理解为所有播放请求都强制走同一后端。
 - FFmpeg 文件名、ELF `SONAME` 和所有 `DT_NEEDED` 都要从 `libav*`/`libsw*` 等长改为 `libmv*`/`libmw*`，不能只重命名文件，否则会和 `nextlib-media3ext` 内置 FFmpeg 发生 Android linker 复用冲突。
-- 固定 MPV 源码会应用 `third_party/patches/mpv-stream-cb-disc-controls.patch`。该补丁扩展 `stream_cb` 光盘控制并接入 `demux_disc`；修改补丁或 `stream_cb.h` 后必须同时重建 `libmpv.so` 和 `libplayer.so`。AImageReader暂态补丁只改变`libmpv.so`，修改后必须重建并同步提交两套ARM ABI的`libmpv.so`。
+- 固定 MPV 源码会应用 `third_party/patches/mpv-stream-cb-disc-controls.patch`。该补丁扩展 `stream_cb` 光盘控制并接入 `demux_disc`；修改补丁或 `stream_cb.h` 后必须同时重建 `libmpv.so` 和 `libplayer.so`。AImageReader帧同步补丁只改变`libmpv.so`，修改后必须重建并同步提交两套ARM ABI的`libmpv.so`。
 - 更新后用 NDK `llvm-readelf -d` 确认没有残留 `libav*.so`/`libsw*.so` 依赖，再分别回归 OpenGL、Vulkan、硬解/软解、LUT、字幕、线路切换、连续起播/退出和 Blu-ray ISO。Android 15 必须同时检查 crash buffer 中是否出现 destroyed mutex。
 
 从固定源码重新生成 MPV/FFmpeg `.so`：
@@ -219,7 +219,7 @@ scripts/build_mpv_native.sh --abi all --install
 # 按需执行：scripts/build_mpv_player_jni.sh
 ```
 
-脚本读取 `third_party/mpv-native-lock.json`，自动下载固定 commit、应用 MPV 光盘控制和AImageReader暂态补丁、构建依赖、修改 ELF 依赖名、strip 并校验。当前 lock 与两套已提交 assets 一致，可复现正式 native 组合；普通 Gradle 和 GitHub Actions 不会调用该脚本，直接复用仓库已提交的 `.so`。Android Release Action 会在 Gradle 打包前运行 `scripts/verify_mpv_native_assets.sh --require-elf`，检查两套 assets 的文件集合、ABI、版本字符串、HTTP/2、光盘补丁、AImageReader暂态补丁标记、`SONAME` 和 `DT_NEEDED`，但不会现场重编 MPV。完整排查记录见本地 `plans/MPV原生依赖升级与Android崩溃排查记录.md`。
+脚本读取 `third_party/mpv-native-lock.json`，自动下载固定 commit、应用 MPV 光盘控制和AImageReader帧同步补丁、构建依赖、修改 ELF 依赖名、strip 并校验。当前 lock 与两套已提交 assets 一致，可复现正式 native 组合；libass 的 fontconfig/Expat 字体回退栈静态链接进 `libmpv.so`，不会向 APK 内置中文字体或增加独立 `.so`。普通 Gradle 和 GitHub Actions 不会调用该脚本，直接复用仓库已提交的 `.so`。Android Release Action 会在 Gradle 打包前运行 `scripts/verify_mpv_native_assets.sh --require-elf`，检查两套 assets 的文件集合、ABI、版本字符串、HTTP/2、fontconfig 字体提供器、光盘补丁、AImageReader帧同步与暂态保留标记、`SONAME` 和 `DT_NEEDED`，但不会现场重编 MPV。完整排查记录见本地 `plans/MPV原生依赖升级与Android崩溃排查记录.md`。
 
 只校验当前仓库已经提交的 MPV native assets：
 
@@ -265,23 +265,23 @@ app/src/main/jniLibs/armeabi-v7a/
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk" # Linux 通常为 $HOME/Android/Sdk
 "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-  "ndk;27.2.12479018" \
-  "ndk;21.4.7075529"
+  "ndk;28.2.13676358"
 
 # macOS
-brew install git yasm
+xcode-select -p >/dev/null 2>&1 || xcode-select --install
+brew install openjdk@21 git python@3.10 pkg-config
 
-# Ubuntu
+# Ubuntu 24.04+
 sudo apt-get update
-sudo apt-get install -y git make yasm python3
+sudo apt-get install -y openjdk-21-jdk git python3.10 python3.10-venv build-essential perl pkg-config file
 ```
 
 重建并安装 arm64 IJK，然后打快速 Release：
 
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
-export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
-scripts/build_ijk_native.sh --abi arm64-v8a --install
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+bash scripts/build_ijk_native.sh --abi arm64-v8a --install
 bash gradlew :app:assembleMobileArm64_v8aRelease -PfastRelease=true
 ```
 
@@ -289,12 +289,12 @@ Ubuntu 下重建 32 位 IJK：
 
 ```bash
 export ANDROID_HOME="$HOME/Android/Sdk"
-export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/21.4.7075529"
-scripts/build_ijk_native.sh --abi armeabi-v7a --install
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+bash scripts/build_ijk_native.sh --abi armeabi-v7a --install
 bash gradlew :app:assembleLeanbackArmeabi_v7aRelease -PfastRelease=true
 ```
 
-脚本会拉取锁定的 IJK/FFmpeg 4.0 源码、编译 OpenSSL/FFmpeg/IJK、检查三项输出并按 `--install` 写入对应 ABI 目录。32 位 native 重建推荐 Ubuntu；只需打包 App 时不必安装这两套额外 NDK，也不要运行该脚本。
+脚本会拉取锁定的 IJK/FFmpeg 4.0 与 OpenSSL `openssl-3.2` 源码、应用补丁、检查三项输出并按 `--install` 写入对应 ABI 目录。arm64 与 armeabi-v7a 均已在 macOS 使用 NDK 28.2.13676358 重建成功，并和 MPV/JNI/DVD 共用这一版 NDK；32 位不再需要 NDK 21。只需打包 App 时不必运行该脚本，两套 ARM ABI 也不需要 `yasm`。完整命令和 API 21、`pkg-config` 隔离说明见 `webhome-devkit/docs/应用完整开发文档.md`。
 
 ### APK 输出路径
 
@@ -382,6 +382,7 @@ bash gradlew :app:assembleMobileArm64_v8aDebug :app:assembleLeanbackArm64_v8aDeb
 ### 常见构建失败
 
 - `Unsupported class file major version`、`invalid source release: 21`：当前终端没有使用 JDK 21。
+- `Chaquopy ... is not a valid Python 3.10 command`：安装主机 Python 3.10，并确保当前终端能执行 `python3.10 --version`。
 - `SDK location not found`：缺少 `local.properties`，或 `sdk.dir` 指向错误。
 - `failed to find target with hash string 'android-37'`：未安装 Android SDK Platform 37。
 - `NDK clang++ not found under .../ndk/28.2.13676358`：未安装 NDK 28.2.13676358，或 `ANDROID_NDK_HOME` 指向错误。
