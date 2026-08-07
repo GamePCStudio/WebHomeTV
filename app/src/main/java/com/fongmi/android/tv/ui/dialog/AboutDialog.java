@@ -29,10 +29,14 @@ public final class AboutDialog {
 
         Dialog dialog = LightDialog.create(activity, null, binding.getRoot());
         binding.confirm.setOnClickListener(v -> dialog.dismiss());
-        binding.checkUpdate.setOnClickListener(v -> {
-            dialog.dismiss();
-            if (updateAction != null) updateAction.run();
-        });
+        if (updateAction == null) {
+            binding.checkUpdate.setVisibility(android.view.View.GONE);
+        } else {
+            binding.checkUpdate.setOnClickListener(v -> {
+                dialog.dismiss();
+                updateAction.run();
+            });
+        }
         dialog.setCanceledOnTouchOutside(false);
         dialog.show();
         configureWindow(activity, dialog);
