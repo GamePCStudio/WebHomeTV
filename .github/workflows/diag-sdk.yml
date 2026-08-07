@@ -17,9 +17,11 @@ jobs:
         run: |
           echo "=== sdkmanager version ==="
           sdkmanager --version
-          echo "=== platforms (android-3x) ==="
+          echo "=== STABLE channel: platforms (android-3x) ==="
           sdkmanager --list 2>/dev/null | grep -iE 'platforms;android-3[0-9]' | head -40
-          echo "=== build-tools (3x) ==="
+          echo "=== STABLE channel: build-tools (3x) ==="
           sdkmanager --list 2>/dev/null | grep -iE 'build-tools;[0-9]' | head -40
-          echo "=== cmdline-tools ==="
-          sdkmanager --list 2>/dev/null | grep -iE 'cmdline-tools' | head -10
+          echo "=== CHANNEL 3 (canary/preview): platforms (android-3x) ==="
+          sdkmanager --list --channel=3 2>/dev/null | grep -iE 'platforms;android-3[0-9]' | head -40
+          echo "=== CHANNEL 3: build-tools (3x) ==="
+          sdkmanager --list --channel=3 2>/dev/null | grep -iE 'build-tools;[0-9]' | head -40
