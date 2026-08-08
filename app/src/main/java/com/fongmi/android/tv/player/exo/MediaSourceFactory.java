@@ -57,7 +57,7 @@ public class MediaSourceFactory implements MediaSource.Factory {
     private static StandaloneDatabaseProvider databaseProvider;
     private static Cache cache;
 
-    private final DefaultMediaSourceFactory defaultMediaSourceFactory;
+    private DefaultMediaSourceFactory defaultMediaSourceFactory;
     private OkHttpDataSource.Factory httpDataSourceFactory;
     private DataSource.Factory dataSourceFactory;
     private ExtractorsFactory extractorsFactory;
@@ -219,18 +219,22 @@ public class MediaSourceFactory implements MediaSource.Factory {
      * 保留原有 TS 等 extractor 配置（它们来自 getExtractorsFactory() 的 DefaultExtractorsFactory）。
      */
     public void applyAssSupport(AssSubtitleParserFactory parserFactory, AssHandler handler) {
-        defaultMediaSourceFactory.setSubtitleParserFactory(parserFactory);
         ExtractorsFactory base = getExtractorsFactory();
         ExtractorsFactory assExtractors = () -> {
             Extractor[] extractors = base.createExtractors();
             for (int i = 0; i < extractors.length; i++) {
                 if (extractors[i] instanceof MatroskaExtractor) {
-                    extractors[i] = new AssMatroskaExtractor(parserFactory, handler);
+                    // ass-media 0.5.0: AssMatroskaExtractor(SubtitleParser.Factory, AssHandler, flags=0)
+                    extractors[i] = new AssMatroskaExtractor(parserFactory, handler, 0);
                 }
             }
             return extractors;
         };
-        defaultMediaSourceFactory.setExtractorsFactory(assExtractors);
+        // media3 1.11.0-fongmi 的 DefaultMediaSourceFactory 没有 setExtractorsFactory()，
+        // 只能通过构造器注入 extractors factory（与库内 buildWithAssSupport 一致）。
+        defaultMediaSourceFactory = new DefaultMediaSourceFactory(getDataSourceFactory(), assExtractors)
+                .setLoadOnlySelectedTracks(PlaybackPerformanceSetting.isLoadOnlySelectedTracksEnabled());
+        defaultMediaSourceFactory.setSubtitleParserFactory(parserFactory);
     }
 
     private DataSource.Factory getDataSourceFactory() {
