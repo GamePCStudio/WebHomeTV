@@ -111,36 +111,51 @@ public class PlayerHelper {
         if (!TextUtils.isEmpty(codecs)) tokens.add(codecs);
         if (!TextUtils.isEmpty(label)) tokens.add(label);
         if (!TextUtils.isEmpty(id)) tokens.add(id);
+        // media3 stores the ORIGINAL sampleMimeType in `codecs` when it normalizes a text track to
+        // application/x-media3-cues (see DefaultMediaSourceFactory / BundledChunkExtractor). The
+        // original value is the FULL mime string (text/ssa, application/x-subrip, application/pgs ...),
+        // so we must match full mimes, not just simplified codec tokens.
+        boolean assMarker = false;
+        String ssaCandidate = null;
         for (String raw : tokens) {
             String t = raw.toLowerCase(Locale.ROOT);
+            // Full mimes (the common case for normalized embedded tracks)
+            if (t.contains("text/ssa") || t.contains("application/x-ssa") || t.contains("application/ssa")) {
+                ssaCandidate = "SSA";
+                continue;
+            }
+            if (t.contains("application/x-subrip") || t.contains("application/subrip") || t.contains("text/srt") || t.contains("subrip")) return "SRT";
+            if (t.contains("application/pgs") || t.contains("image/pgs") || t.contains("hdmv/pgs") || t.contains("s_hdmv")) return "PGS";
+            if (t.contains("application/vobsub") || t.contains("vobsub")) return "VobSub";
+            if (t.contains("application/dvbsub") || t.contains("dvbsub")) return "DVB";
+            if (t.contains("text/vtt") || t.contains("webvtt")) return "VTT";
+            if (t.contains("application/ttml") || t.contains("ttml")) return "TTML";
+            if (t.contains("application/tx3g") || t.contains("tx3g")) return "TX3G";
+            if (t.contains("text/plain")) return "TXT";
             // Matroska codec ids
             if (t.contains("s_text/ass")) return "ASS";
             if (t.contains("s_text/ssa")) return "SSA";
             if (t.contains("s_text/utf8") || t.contains("s_text/usf")) return "SRT";
-            if (t.contains("s_hdmv/pgs") || t.contains("s_image/bmp")) return "PGS";
+            if (t.contains("s_image/bmp")) return "PGS";
             if (t.contains("s_text/webvtt")) return "VTT";
             if (t.contains("s_dvbsub")) return "DVB";
             if (t.contains("s_vobsub")) return "VobSub";
-            if (t.contains("s_ttml") || t.endsWith(".ttml") || t.contains(".xml") || t.contains(".dfxp")) return "TTML";
-            // Simplified codec values
-            if (t.equals("ass")) return "ASS";
-            if (t.equals("ssa")) return "SSA";
-            if (t.equals("srt")) return "SRT";
-            if (t.equals("pgs")) return "PGS";
+            // Explicit ASS marker (e.g. a track name/label like "English (ASS)")
+            if (t.equals("ass") || t.endsWith(".ass") || (t.contains("ass") && !t.contains("ssa"))) assMarker = true;
+            // Simplified codec values / file extensions (external subtitles carry the filename)
+            if (t.equals("ssa") || t.endsWith(".ssa")) ssaCandidate = "SSA";
+            if (t.equals("srt") || t.endsWith(".srt")) return "SRT";
+            if (t.equals("pgs") || t.endsWith(".sup")) return "PGS";
             if (t.equals("wvtt")) return "VTT";
             if (t.equals("stpp")) return "TTML";
             if (t.equals("tx3g")) return "TX3G";
-            // File extensions (external subtitles often carry the filename in label/id)
-            if (t.endsWith(".srt")) return "SRT";
-            if (t.endsWith(".ass")) return "ASS";
-            if (t.endsWith(".ssa")) return "SSA";
-            if (t.endsWith(".sup")) return "PGS";
-            if (t.endsWith(".vtt")) return "VTT";
-            if (t.endsWith(".ttml") || t.endsWith(".xml") || t.endsWith(".dfxp")) return "TTML";
+            if (t.endsWith(".xml") || t.endsWith(".dfxp")) return "TTML";
             if (t.endsWith(".smi")) return "SMI";
             if (t.endsWith(".txt")) return "TXT";
             if (t.endsWith(".sub") || t.endsWith(".idx")) return "VobSub";
         }
+        if (assMarker) return "ASS";
+        if (ssaCandidate != null) return ssaCandidate;
         return "";
     }
 
