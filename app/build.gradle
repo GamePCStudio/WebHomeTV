@@ -55,6 +55,10 @@ android {
             dimension "abi"
             ndk { abiFilters "armeabi-v7a" }
         }
+        universal {
+            dimension "abi"
+            ndk { abiFilters "armeabi-v7a", "arm64-v8a" }
+        }
     }
 
     buildFeatures {

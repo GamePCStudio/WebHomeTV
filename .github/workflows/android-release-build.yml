@@ -72,7 +72,7 @@ jobs:
           } > local.properties
           echo "Release signing configured"
 
-      - name: Build four signed release APKs
+      - name: Build signed release APKs (arm64 + v7a + universal)
         run: |
           chmod +x ./gradlew
           ./gradlew \
@@ -80,6 +80,8 @@ jobs:
             :app:assembleMobileArmeabi_v7aRelease \
             :app:assembleLeanbackArm64_v8aRelease \
             :app:assembleLeanbackArmeabi_v7aRelease \
+            :app:assembleMobileUniversalRelease \
+            :app:assembleLeanbackUniversalRelease \
             --no-daemon --build-cache
 
       - name: Collect APKs
