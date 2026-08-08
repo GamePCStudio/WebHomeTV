@@ -35,7 +35,13 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager --update > /dev/null || true
+          if ! sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"; then
+            echo "=== available platforms ==="
+            sdkmanager --list 2>/dev/null | grep -i "platforms;android" | head -50
+            exit 1
+          fi
 
       - name: Build debug APKs
         run: |
