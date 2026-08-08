@@ -94,14 +94,19 @@ public class PlayerHelper {
         if (MimeTypes.APPLICATION_VOBSUB.equals(mime)) return "VobSub";
         if (MimeTypes.APPLICATION_DVBSUBS.equals(mime)) return "DVB";
         if (MimeTypes.TEXT_SSA.equals(mime)) {
-            return (codecs != null && "ass".equalsIgnoreCase(codecs)) ? "ASS" : "SSA";
+            // libass renders both SSA and ASS identically, and this app's subtitles are ASS, so
+            // consistently label the track ASS (instead of SSA).
+            return "ASS";
         }
         if ("text/plain".equals(mime)) return "TXT";
         // Normalized embedded track (application/x-media3-cues): recover the real format. Fall back
         // to a generic label so the raw "application/x-media3-cues" token is never shown to the user.
         if ("application/x-media3-cues".equals(mime)) {
             String recovered = recoverSubtitleFormat(codecs, format.label, format.id);
-            return TextUtils.isEmpty(recovered) ? "SUB" : recovered;
+            // This build (WebHomeTV.ASS) renders subtitles via libass/ass-media, so an embedded
+            // text track we cannot otherwise identify is, in practice, an ASS subtitle. Default to
+            // ASS instead of leaking the raw "application/x-media3-cues" token or a meaningless "SUB".
+            return TextUtils.isEmpty(recovered) ? "ASS" : recovered;
         }
         return recoverSubtitleFormat(codecs, null, null);
     }
