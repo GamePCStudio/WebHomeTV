@@ -21,8 +21,13 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy;
 import androidx.media3.extractor.DefaultExtractorsFactory;
+import androidx.media3.extractor.Extractor;
 import androidx.media3.extractor.ExtractorsFactory;
+import androidx.media3.extractor.mkv.MatroskaExtractor;
 import androidx.media3.extractor.ts.TsExtractor;
+import io.github.peerless2012.ass.media.AssHandler;
+import io.github.peerless2012.ass.media.extractor.AssMatroskaExtractor;
+import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.player.cache.DiskCacheCapacityPolicy;
@@ -205,6 +210,27 @@ public class MediaSourceFactory implements MediaSource.Factory {
     private ExtractorsFactory getExtractorsFactory() {
         if (extractorsFactory == null) extractorsFactory = new DefaultExtractorsFactory().setTsExtractorFlags(FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS).setTsExtractorTimestampSearchBytes(TsExtractor.DEFAULT_TIMESTAMP_SEARCH_BYTES * 10);
         return extractorsFactory;
+    }
+
+    /**
+     * 接入 libass (ass-media) 支持：让内嵌/外部 ASS 字幕能被 libass 解析与渲染。
+     * - 将 AssSubtitleParserFactory 挂到内层 DefaultMediaSourceFactory，用于解析 ASS 轨道；
+     * - 把 extractors 工厂中的 MatroskaExtractor 替换为 AssMatroskaExtractor，以支持 MKV 内嵌 ASS。
+     * 保留原有 TS 等 extractor 配置（它们来自 getExtractorsFactory() 的 DefaultExtractorsFactory）。
+     */
+    public void applyAssSupport(AssSubtitleParserFactory parserFactory, AssHandler handler) {
+        defaultMediaSourceFactory.setSubtitleParserFactory(parserFactory);
+        ExtractorsFactory base = getExtractorsFactory();
+        ExtractorsFactory assExtractors = () -> {
+            Extractor[] extractors = base.createExtractors();
+            for (int i = 0; i < extractors.length; i++) {
+                if (extractors[i] instanceof MatroskaExtractor) {
+                    extractors[i] = new AssMatroskaExtractor(parserFactory, handler);
+                }
+            }
+            return extractors;
+        };
+        defaultMediaSourceFactory.setExtractorsFactory(assExtractors);
     }
 
     private DataSource.Factory getDataSourceFactory() {

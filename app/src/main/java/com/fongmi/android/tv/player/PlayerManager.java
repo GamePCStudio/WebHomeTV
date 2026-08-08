@@ -345,6 +345,7 @@ public class PlayerManager implements ParseCallback {
         pendingIjkRuntimeFallbackReparse = false;
         if (engine == null) return;
         engine.release();
+        com.fongmi.android.tv.player.exo.ExoUtil.releaseAss();
         engine = null;
         player = null;
         videoEffectsActive = false;
