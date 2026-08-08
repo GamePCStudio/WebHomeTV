@@ -24,6 +24,7 @@ import androidx.media3.ui.TrackNameProvider;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.BuildConfig;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Sub;
 import com.fongmi.android.tv.bean.Track;
@@ -175,6 +176,13 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
                         if (!TextUtils.isEmpty(mimeDisplay) && !mimeDisplay.equals(fmt)) {
                             name = name.replace(mimeDisplay, fmt);
                         }
+                    }
+                    // DIAGNOSTIC (debug builds only): append the raw Format fields so the real
+                    // sampleMimeType/codecs/label/id of a mislabeled track can be captured from a
+                    // screenshot of the subtitle-selection dialog (no adb needed).
+                    if (BuildConfig.DEBUG) {
+                        name = name + " [" + format.sampleMimeType + "|" + format.codecs
+                                + "|" + format.label + "|" + format.id + "]";
                     }
                 }
                 Log.d("TrackDialog", "track type=" + type + " id=" + format.id + " label=" + format.label + " lang=" + format.language + " codec=" + format.codecs + " mime=" + format.sampleMimeType + " name=" + name);
