@@ -37,11 +37,9 @@ jobs:
         run: |
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager --update > /dev/null || true
-          if ! sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"; then
-            echo "=== available platforms ==="
-            sdkmanager --list 2>/dev/null | grep -i "platforms;android" | head -50
-            exit 1
-          fi
+          sdkmanager "platform-tools" "platforms;android-37.0" "build-tools;37.0.0"
+          # AGP's compileSdk=37 looks for platforms/android-37; this SDK generation ships android-37.0
+          ln -sfn "$ANDROID_SDK_ROOT/platforms/android-37.0" "$ANDROID_SDK_ROOT/platforms/android-37" || true
 
       - name: Build debug APKs
         run: |
