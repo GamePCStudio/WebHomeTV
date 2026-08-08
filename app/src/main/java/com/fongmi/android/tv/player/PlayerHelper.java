@@ -98,6 +98,7 @@ public class PlayerHelper {
             // consistently label the track ASS (instead of SSA).
             return "ASS";
         }
+        if ("text/x-ssa".equals(mime)) return "SSA";
         if ("text/plain".equals(mime)) return "TXT";
         // Normalized embedded track (application/x-media3-cues): recover the real format. Fall back
         // to a generic label so the raw "application/x-media3-cues" token is never shown to the user.
@@ -125,7 +126,7 @@ public class PlayerHelper {
         for (String raw : tokens) {
             String t = raw.toLowerCase(Locale.ROOT);
             // Full mimes (the common case for normalized embedded tracks)
-            if (t.contains("text/ssa") || t.contains("application/x-ssa") || t.contains("application/ssa")) {
+            if (t.contains("text/ssa") || t.contains("text/x-ssa") || t.contains("application/x-ssa") || t.contains("application/ssa")) {
                 ssaCandidate = "SSA";
                 continue;
             }
