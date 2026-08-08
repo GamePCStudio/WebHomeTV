@@ -17,6 +17,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.Tracks;
+import androidx.media3.common.util.FormatNameUtil;
 import androidx.media3.ui.DefaultTrackNameProvider;
 import androidx.media3.ui.TrackNameProvider;
 import androidx.viewbinding.ViewBinding;
@@ -161,8 +162,20 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
             if (trackGroup.getType() != type) continue;
             for (int j = 0; j < trackGroup.length; j++) {
                 Format format = trackGroup.getTrackFormat(j);
-                String fmt = PlayerHelper.getSubtitleFormatLabel(format);
-                String name = provider.getTrackName(format) + (fmt.isEmpty() ? "" : " · " + fmt);
+                String name = provider.getTrackName(format);
+                if (type == C.TRACK_TYPE_TEXT) {
+                    // DefaultTrackNameProvider always appends the sample-mime display name (e.g.
+                    // "application/x-media3-cues" for normalized embedded tracks) as the last
+                    // segment. For TEXT tracks only, replace that segment with the resolved,
+                    // human-readable format label. AUDIO (and video) rows are left untouched.
+                    String fmt = PlayerHelper.getSubtitleFormatLabel(format);
+                    if (!TextUtils.isEmpty(fmt)) {
+                        String mimeDisplay = FormatNameUtil.getSampleMimeTypeDisplayName(format);
+                        if (!TextUtils.isEmpty(mimeDisplay) && !mimeDisplay.equals(fmt)) {
+                            name = name.replace(mimeDisplay, fmt);
+                        }
+                    }
+                }
                 Log.d("TrackDialog", "track type=" + type + " id=" + format.id + " label=" + format.label + " lang=" + format.language + " codec=" + format.codecs + " mime=" + format.sampleMimeType + " name=" + name);
                 // Keep the player's native track id with the visible item. Runtime track
                 // switching must target this stable id directly; the formatted description

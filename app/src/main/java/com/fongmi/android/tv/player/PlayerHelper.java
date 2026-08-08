@@ -75,51 +75,73 @@ public class PlayerHelper {
 
     /**
      * Resolve a human-readable subtitle format label (PGS / ASS / SSA / SRT / VTT / TTML / TXT ...).
-     * Media3 normalizes every text track's sampleMimeType to "application/x-media3-cues", so the
-     * real format must be read from the {@code codecs} field (embedded tracks) or from the real
-     * sampleMimeType (external subtitle files).
+     * Media3 (and the ass-media integration) normalize embedded text tracks' sampleMimeType to
+     * "application/x-media3-cues", so the real format must be recovered from {@code codecs},
+     * {@code label} or {@code id}. Returns "" when it cannot be determined (callers then keep the
+     * player's native track name untouched).
      */
     public static String getSubtitleFormatLabel(Format format) {
         if (format == null) return "";
         String mime = format.sampleMimeType;
         String codecs = format.codecs;
-        // Media3 collapses every text track's MIME into the internal Cues representation.
-        if ("application/x-media3-cues".equals(mime)) {
-            if (!TextUtils.isEmpty(codecs)) {
-                switch (codecs.toLowerCase(Locale.ROOT)) {
-                    case "ass":  return "ASS";
-                    case "ssa":  return "SSA";
-                    case "stpp": return "TTML";
-                    case "wvtt": return "VTT";
-                    case "pgs":  return "PGS";
-                    case "srt":  return "SRT";
-                    case "tx3g": return "TX3G";
-                }
-            }
-            // Embedded but no codecs (most SRT/SUB tracks fall here) -> best-effort label.
-            return "SUB";
-        }
+        // Real (external / non-normalized) subtitle mimes already display fine via
+        // FormatNameUtil.getSampleMimeTypeDisplayName; normalize them to our short labels.
         if (MimeTypes.APPLICATION_SUBRIP.equals(mime) || "application/subrip".equals(mime)) return "SRT";
-        if (MimeTypes.TEXT_SSA.equals(mime)) {
-            if (TextUtils.isEmpty(codecs)) return "SSA";
-            return "ass".equalsIgnoreCase(codecs) ? "ASS" : "SSA";
-        }
-        if ("application/pgs".equals(mime) || "image/pgs".equals(mime)) return "PGS";
         if (MimeTypes.TEXT_VTT.equals(mime)) return "VTT";
         if (MimeTypes.APPLICATION_TTML.equals(mime) || "application/ttml+xml".equals(mime)) return "TTML";
-        if ("text/plain".equals(mime)) return "TXT";
-        if (!TextUtils.isEmpty(codecs)) {
-            switch (codecs.toLowerCase(Locale.ROOT)) {
-                case "ass":  return "ASS";
-                case "ssa":  return "SSA";
-                case "pgs":  return "PGS";
-                case "wvtt": return "VTT";
-                case "stpp": return "TTML";
-                case "srt":  return "SRT";
-                case "tx3g": return "TX3G";
-            }
+        if (MimeTypes.APPLICATION_TX3G.equals(mime)) return "TX3G";
+        if ("application/pgs".equals(mime) || "image/pgs".equals(mime)) return "PGS";
+        if (MimeTypes.APPLICATION_VOBSUB.equals(mime)) return "VobSub";
+        if (MimeTypes.APPLICATION_DVBSUBS.equals(mime)) return "DVB";
+        if (MimeTypes.TEXT_SSA.equals(mime)) {
+            return (codecs != null && "ass".equalsIgnoreCase(codecs)) ? "ASS" : "SSA";
         }
-        return "SUB";
+        if ("text/plain".equals(mime)) return "TXT";
+        // Normalized embedded track (application/x-media3-cues): recover the real format. Fall back
+        // to a generic label so the raw "application/x-media3-cues" token is never shown to the user.
+        if ("application/x-media3-cues".equals(mime)) {
+            String recovered = recoverSubtitleFormat(codecs, format.label, format.id);
+            return TextUtils.isEmpty(recovered) ? "SUB" : recovered;
+        }
+        return recoverSubtitleFormat(codecs, null, null);
+    }
+
+    private static String recoverSubtitleFormat(String codecs, String label, String id) {
+        List<String> tokens = new ArrayList<>();
+        if (!TextUtils.isEmpty(codecs)) tokens.add(codecs);
+        if (!TextUtils.isEmpty(label)) tokens.add(label);
+        if (!TextUtils.isEmpty(id)) tokens.add(id);
+        for (String raw : tokens) {
+            String t = raw.toLowerCase(Locale.ROOT);
+            // Matroska codec ids
+            if (t.contains("s_text/ass")) return "ASS";
+            if (t.contains("s_text/ssa")) return "SSA";
+            if (t.contains("s_text/utf8") || t.contains("s_text/usf")) return "SRT";
+            if (t.contains("s_hdmv/pgs") || t.contains("s_image/bmp")) return "PGS";
+            if (t.contains("s_text/webvtt")) return "VTT";
+            if (t.contains("s_dvbsub")) return "DVB";
+            if (t.contains("s_vobsub")) return "VobSub";
+            if (t.contains("s_ttml") || t.endsWith(".ttml") || t.contains(".xml") || t.contains(".dfxp")) return "TTML";
+            // Simplified codec values
+            if (t.equals("ass")) return "ASS";
+            if (t.equals("ssa")) return "SSA";
+            if (t.equals("srt")) return "SRT";
+            if (t.equals("pgs")) return "PGS";
+            if (t.equals("wvtt")) return "VTT";
+            if (t.equals("stpp")) return "TTML";
+            if (t.equals("tx3g")) return "TX3G";
+            // File extensions (external subtitles often carry the filename in label/id)
+            if (t.endsWith(".srt")) return "SRT";
+            if (t.endsWith(".ass")) return "ASS";
+            if (t.endsWith(".ssa")) return "SSA";
+            if (t.endsWith(".sup")) return "PGS";
+            if (t.endsWith(".vtt")) return "VTT";
+            if (t.endsWith(".ttml") || t.endsWith(".xml") || t.endsWith(".dfxp")) return "TTML";
+            if (t.endsWith(".smi")) return "SMI";
+            if (t.endsWith(".txt")) return "TXT";
+            if (t.endsWith(".sub") || t.endsWith(".idx")) return "VobSub";
+        }
+        return "";
     }
 
     public static void share(Activity activity, String url, Map<String, String> headers, CharSequence title) {
