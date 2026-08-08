@@ -161,7 +161,8 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
             if (trackGroup.getType() != type) continue;
             for (int j = 0; j < trackGroup.length; j++) {
                 Format format = trackGroup.getTrackFormat(j);
-                String name = provider.getTrackName(format);
+                String fmt = PlayerHelper.getSubtitleFormatLabel(format);
+                String name = provider.getTrackName(format) + (fmt.isEmpty() ? "" : " · " + fmt);
                 Log.d("TrackDialog", "track type=" + type + " id=" + format.id + " label=" + format.label + " lang=" + format.language + " codec=" + format.codecs + " mime=" + format.sampleMimeType + " name=" + name);
                 // Keep the player's native track id with the visible item. Runtime track
                 // switching must target this stable id directly; the formatted description
