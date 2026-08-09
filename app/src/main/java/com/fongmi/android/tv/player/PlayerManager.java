@@ -129,6 +129,7 @@ public class PlayerManager implements ParseCallback {
     private static final long LOCAL_PROXY_RETRY_DELAY_MS = 1000;
     private static final long HARD_DECODE_SWITCH_RETRY_DELAY_MS = 1200;
     private static final long EXO_TUNNELING_RETRY_DELAY_MS = 250;
+    private static final long EXO_PASSTHROUGH_FALLBACK_RETRY_DELAY_MS = 250;
     private static final long EXO_DECODER_RUNTIME_RETRY_DELAY_MS = 1200;
     private static final long EXO_DECODER_RESOURCE_RECOVERY_DELAY_MS = 500;
     private static final long MPV_AUTO_OUTPUT_PROBE_INTERVAL_MS = 250;
@@ -6871,6 +6872,7 @@ public class PlayerManager implements ParseCallback {
                     && engine instanceof ExoPlayerEngine exo
                     && exo.observeDecoderRuntimeFailure(e);
             if (action == PlayerEngine.ErrorAction.DECODE && retryExoTunnelingFailure(e)) return;
+            if (action == PlayerEngine.ErrorAction.PASSTHROUGH && retryExoAudioTrackPassthroughFallback(e)) return;
             if (decoderRuntimeObserved && retryExoDecoderRuntimeFailure(e)) return;
             if (action == PlayerEngine.ErrorAction.DECODE && retryHardDecodeSwitch(e)) return;
             if (action == PlayerEngine.ErrorAction.FATAL && retryLocalProxy(e)) return;
@@ -7149,6 +7151,39 @@ public class PlayerManager implements ParseCallback {
             App.post(runnable, Constant.TIMEOUT_PLAY);
             callback.onPrepare();
         }, EXO_TUNNELING_RETRY_DELAY_MS);
+        return true;
+    }
+
+    private boolean retryExoAudioTrackPassthroughFallback(PlaybackException e) {
+        if (!(engine instanceof ExoPlayerEngine exo) || player == null || spec == null) return false;
+        if (e.errorCode != PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED
+                && e.errorCode != PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED) return false;
+        // 直通已关闭（上次已降级）仍报错：不再循环降级，交给上层 onError。
+        if (!PlayerSetting.isAudioPassThrough(PlayerSetting.EXO)) return false;
+        PlayerSetting.putAudioPassThrough(PlayerSetting.EXO, false);
+        int seq = ++prepareSeq;
+        PlaySpec target = spec;
+        long position = Math.max(0, getPosition());
+        float speed = getSpeed();
+        boolean repeat = isRepeatOne();
+        boolean wasPlayWhenReady = player.getPlayWhenReady();
+        App.removeCallbacks(runnable);
+        rebuildPlayer(true);
+        this.playWhenReady = wasPlayWhenReady;
+        initTrack = false;
+        if (SpiderDebug.isEnabled()) SpiderDebug.log("exo-passthrough", "fallback scheduled delay=%d position=%d errorType=%s", EXO_PASSTHROUGH_FALLBACK_RETRY_DELAY_MS, position, e.getClass().getSimpleName());
+        App.post(() -> {
+            if (seq != prepareSeq || spec != target || engine != exo || player == null) return;
+            if (SpiderDebug.isEnabled()) SpiderDebug.log("exo-passthrough", "fallback start position=%d", position);
+            setDanmakus(target.getDanmakus());
+            waitingLutBeforePlay = false;
+            applySubtitleStyle();
+            engine.start(target.checkUa(), position, wasPlayWhenReady);
+            if (speed != 1f) setSpeed(speed);
+            setRepeatOne(repeat);
+            App.post(runnable, Constant.TIMEOUT_PLAY);
+            callback.onPrepare();
+        }, EXO_PASSTHROUGH_FALLBACK_RETRY_DELAY_MS);
         return true;
     }
 
