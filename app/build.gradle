@@ -55,6 +55,10 @@ android {
             dimension "abi"
             ndk { abiFilters "armeabi-v7a" }
         }
+        universal {
+            dimension "abi"
+            ndk { abiFilters "armeabi-v7a", "arm64-v8a" }
+        }
     }
 
     buildFeatures {
@@ -130,6 +134,7 @@ dependencies {
     implementation libs.lifecycle.service
     implementation libs.media
     implementation libs.bundles.media3
+    implementation libs.assMedia
     implementation libs.nextlib.media3ext
     implementation libs.palette
     implementation libs.recyclerview
