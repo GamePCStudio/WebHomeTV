@@ -163,6 +163,7 @@ public class ExoUtil {
                         decoderOutput,
                         schedulingSettings))
                 .setMediaSourceFactory(buildMediaSourceFactory())
+                .setMediaCodecSelector(new ExoPassthroughMediaCodecSelector())
                 .setVideoChangeFrameRateStrategy(ExoPerformanceSetting.getFrameRateStrategy());
         if (PlaybackPerformanceSetting.isHighBufferEnabled()) builder.setLoadControl(buildEnhancedLoadControl());
         else ExoPlaybackDiagnostics.logDefaultLoadControl(PlaybackPerformanceSetting.getProfile(PlayerSetting.EXO));
