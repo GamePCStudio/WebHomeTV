@@ -185,6 +185,7 @@ public interface PlayerEngine {
         RECOVERED,
         RELOAD,
         DECODE,
+        PASSTHROUGH,
         FATAL
     }
 
