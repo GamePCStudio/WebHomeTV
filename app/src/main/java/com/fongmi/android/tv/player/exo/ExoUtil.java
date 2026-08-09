@@ -710,7 +710,13 @@ public class ExoUtil {
 
     private static AudioSink buildAudioSink(Context context, boolean enableFloatOutput, boolean enableAudioOutputPlaybackParams) {
         DefaultAudioSink.Builder builder = new DefaultAudioSink.Builder(context).setEnableFloatOutput(enableFloatOutput).setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams);
-        if (!PlayerSetting.isAudioPassThrough(PlayerSetting.EXO)) builder.setAudioOutputProvider(new AudioTrackAudioOutputProvider.Builder(null).build());
+        if (PlayerSetting.isAudioPassThrough(PlayerSetting.EXO)) {
+            // 直通开启：自定义 Provider —— API<29 真实探测直通编码（修复 N1 类设备广播谎报），
+            // 并把 DTS-HD / DTS-HD MA 降级为 DTS core 源码输出。
+            builder.setAudioOutputProvider(new ExoPassthroughAudioOutputProvider(context));
+        } else {
+            builder.setAudioOutputProvider(new AudioTrackAudioOutputProvider.Builder(null).build());
+        }
         return builder.build();
     }
 
