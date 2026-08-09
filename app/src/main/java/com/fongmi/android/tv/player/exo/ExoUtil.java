@@ -40,6 +40,13 @@ import androidx.media3.exoplayer.mediacodec.MediaCodecAdapter;
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.ui.SubtitleView;
+import io.github.peerless2012.ass.media.AssHandler;
+import io.github.peerless2012.ass.media.AssHandlerConfig;
+import io.github.peerless2012.ass.media.factory.AssRenderersFactory;
+import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory;
+import io.github.peerless2012.ass.media.type.AssRenderType;
+import io.github.peerless2012.ass.media.widget.AssSubtitleView;
 import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime;
 import androidx.media3.exoplayer.upstream.BandwidthMeter;
@@ -95,6 +102,11 @@ public class ExoUtil {
     private static volatile EnhancedVideoProfile enhancedVideoProfile;
     private static volatile ExoPlaybackCapability.Report playbackCapabilityReport;
 
+    // libass (ass-media) 特效字幕支持
+    private static AssHandler assHandler;
+    private static SubtitleView subtitleView;
+    private static AssSubtitleView assSubtitleView;
+
     public static void setPlayerView(PlayerView view) {
         view.setRender(PlayerSetting.getRender());
         view.getSubtitleView().setStyle(getCaptionStyle());
@@ -102,6 +114,7 @@ public class ExoUtil {
         view.getSubtitleView().setApplyEmbeddedFontSizes(false);
         if (PlayerSetting.getSubtitlePosition() != 0) view.getSubtitleView().setBottomPosition(PlayerSetting.getSubtitlePosition());
         if (PlayerSetting.getSubtitleTextSize() != 0) view.getSubtitleView().setFractionalTextSize(PlayerSetting.getSubtitleTextSize());
+        subtitleView = view.getSubtitleView();
     }
 
     public static ExoPlayer buildPlayer(int decode, Player.Listener listener) {
@@ -161,7 +174,9 @@ public class ExoUtil {
         if (schedulingSettings.dynamicSchedulingEnabled()) {
             builder.experimentalSetDynamicSchedulingEnabled(true);
         }
+        prepareAssSupport(builder, decode, automatic, decoderRuntimeSession, decoderOutput, schedulingSettings);
         ExoPlayer player = builder.build();
+        attachAssSupport(player);
         PlaybackAnalyticsListener.reset();
         PlaybackAnalyticsListener analyticsListener = new PlaybackAnalyticsListener();
         player.addAnalyticsListener(analyticsListener);
@@ -179,6 +194,59 @@ public class ExoUtil {
         player.setPlayWhenReady(true);
         player.addListener(listener);
         return player;
+    }
+
+    // ===== libass (ass-media) 特效字幕支持 =====
+
+    /**
+     * 在播放器构建前调用：创建 AssHandler，并用 AssRenderersFactory 包裹现有（FFmpeg）渲染器工厂，
+     * 用 AssSubtitleParserFactory + AssMatroskaExtractor 增强 MediaSourceFactory，以支持 ASS 特效字幕。
+     * 重建场景会先释放上一次的 handler，避免 libass native 资源泄漏。
+     */
+    private static void prepareAssSupport(ExoPlayer.Builder builder, int decode, boolean automatic,
+            @Nullable ExoDecoderRuntimeSession decoderRuntimeSession,
+            ExoDecoderRuntimeSession.OutputConfig decoderOutput,
+            ExoFrameSchedulingPlayerSettings schedulingSettings) {
+        if (assHandler != null) {
+            assHandler.release();
+            assHandler = null;
+        }
+        AssRenderType renderType = AssRenderType.OVERLAY_OPEN_GL;
+        // maxRenderPixels = 1920*1080：4K 屏上对 ASS 渲染做降采样再 GPU 放大，省 CPU/内存（0 表示不限制）
+        assHandler = new AssHandler(renderType, new AssHandlerConfig(10000, 128, 1920 * 1080));
+        AssSubtitleParserFactory parserFactory = new AssSubtitleParserFactory(assHandler);
+        MediaSourceFactory assMediaSourceFactory = (MediaSourceFactory) buildMediaSourceFactory();
+        assMediaSourceFactory.applyAssSupport(parserFactory, assHandler);
+        RenderersFactory assRenderersFactory = new AssRenderersFactory(assHandler, buildPlaybackRenderersFactory(
+                decode, automatic ? decoderRuntimeSession : null, decoderOutput, schedulingSettings));
+        builder.setRenderersFactory(assRenderersFactory).setMediaSourceFactory(assMediaSourceFactory);
+    }
+
+    /**
+     * 在播放器构建后调用：对于 OVERLAY 渲染模式，把 AssSubtitleView 挂到 SubtitleView 上，
+     * 并让 AssHandler 监听播放器事件。
+     */
+    private static void attachAssSupport(ExoPlayer player) {
+        if (assHandler == null) return;
+        AssRenderType renderType = assHandler.getRenderType();
+        if (subtitleView != null && (renderType == AssRenderType.OVERLAY_CANVAS || renderType == AssRenderType.OVERLAY_OPEN_GL)) {
+            if (assSubtitleView != null) subtitleView.removeView(assSubtitleView);
+            assSubtitleView = new AssSubtitleView(subtitleView.getContext(), assHandler);
+            subtitleView.addView(assSubtitleView);
+        }
+        assHandler.init(player);
+    }
+
+    /** 释放 libass native 资源并摘掉 AssSubtitleView。PlayerManager.release() 与重建时都会走到。 */
+    public static void releaseAss() {
+        if (assSubtitleView != null) {
+            if (subtitleView != null) subtitleView.removeView(assSubtitleView);
+            assSubtitleView = null;
+        }
+        if (assHandler != null) {
+            assHandler.release();
+            assHandler = null;
+        }
     }
 
     public static MediaItem getMediaItem(PlaySpec spec, int decode) {

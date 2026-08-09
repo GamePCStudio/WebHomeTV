@@ -9,7 +9,6 @@ import android.view.View;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
-import com.fongmi.android.tv.Updater;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.api.config.WallConfig;
@@ -246,7 +245,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     }
 
     private void onVersion(View view) {
-        AboutDialog.show(this, () -> Updater.create().force().start(this));
+        AboutDialog.show(this);
     }
 
     private void setWallDefault(View view) {

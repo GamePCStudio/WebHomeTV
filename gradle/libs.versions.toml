@@ -42,6 +42,7 @@ lottie = "6.7.1"
 material = "1.14.0"
 materialdesigncolors = "1.0.0"
 media3 = "1.11.0-alpha01-fongmi"
+assMedia = "0.5.0"
 nanohttpd = "2.3.1"
 newpipeextractor = "v0.26.3"
 nextlib = "1.10.0-0.12.1-fongmi-softload"
@@ -116,6 +117,7 @@ media3-extractor = { group = "androidx.media3", name = "media3-extractor", versi
 media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 media3-ui-danmaku = { group = "androidx.media3", name = "media3-ui-danmaku", version.ref = "media3" }
+assMedia = { group = "io.github.peerless2012", name = "ass-media", version.ref = "assMedia" }
 nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version.ref = "nanohttpd" }
 newpipeextractor = { group = "com.github.TeamNewPipe", name = "NewPipeExtractor", version.ref = "newpipeextractor" }
 nextlib-media3ext = { group = "io.github.anilbeesetti", name = "nextlib-media3ext", version.ref = "nextlib" }

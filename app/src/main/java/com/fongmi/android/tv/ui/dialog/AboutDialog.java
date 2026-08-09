@@ -22,17 +22,13 @@ public final class AboutDialog {
     private AboutDialog() {
     }
 
-    public static void show(FragmentActivity activity, Runnable updateAction) {
+    public static void show(FragmentActivity activity) {
         DialogAboutBinding binding = DialogAboutBinding.inflate(LayoutInflater.from(activity));
         binding.version.setText(activity.getString(R.string.about_version, AppVersion.fullName(), BuildConfig.FLAVOR_mode, BuildConfig.FLAVOR_abi));
         configureContentHeight(activity, binding);
 
         Dialog dialog = LightDialog.create(activity, null, binding.getRoot());
         binding.confirm.setOnClickListener(v -> dialog.dismiss());
-        binding.checkUpdate.setOnClickListener(v -> {
-            dialog.dismiss();
-            if (updateAction != null) updateAction.run();
-        });
         dialog.setCanceledOnTouchOutside(false);
         dialog.show();
         configureWindow(activity, dialog);

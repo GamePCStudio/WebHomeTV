@@ -10,7 +10,7 @@ jobs:
   debug-build:
     name: Build debug APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -33,17 +33,19 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager --update > /dev/null || true
           sdkmanager "platform-tools" "platforms;android-37.0" "build-tools;37.0.0"
+          # AGP's compileSdk=37 looks for platforms/android-37; this SDK generation ships android-37.0
+          ln -sfn "$ANDROID_SDK_ROOT/platforms/android-37.0" "$ANDROID_SDK_ROOT/platforms/android-37" || true
 
       - name: Build debug APKs
         run: |
           chmod +x ./gradlew
           ./gradlew \
-            :app:assembleMobileArm64_v8aDebug \
-            :app:assembleMobileArmeabi_v7aDebug \
             :app:assembleLeanbackArm64_v8aDebug \
-            :app:assembleLeanbackArmeabi_v7aDebug \
-            --no-daemon
+            :app:assembleMobileArm64_v8aDebug \
+            --no-daemon --build-cache
 
       - name: Collect APKs
         run: |
