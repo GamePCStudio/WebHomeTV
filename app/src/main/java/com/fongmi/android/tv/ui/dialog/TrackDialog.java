@@ -2,6 +2,7 @@ package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,11 +18,13 @@ import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.Tracks;
+import androidx.media3.common.util.FormatNameUtil;
 import androidx.media3.ui.DefaultTrackNameProvider;
 import androidx.media3.ui.TrackNameProvider;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.BuildConfig;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Sub;
 import com.fongmi.android.tv.bean.Track;
@@ -162,6 +165,26 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
             for (int j = 0; j < trackGroup.length; j++) {
                 Format format = trackGroup.getTrackFormat(j);
                 String name = provider.getTrackName(format);
+                if (type == C.TRACK_TYPE_TEXT) {
+                    // DefaultTrackNameProvider always appends the sample-mime display name (e.g.
+                    // "application/x-media3-cues" for normalized embedded tracks) as the last
+                    // segment. For TEXT tracks only, replace that segment with the resolved,
+                    // human-readable format label. AUDIO (and video) rows are left untouched.
+                    String fmt = PlayerHelper.getSubtitleFormatLabel(format);
+                    if (!TextUtils.isEmpty(fmt)) {
+                        String mimeDisplay = FormatNameUtil.getSampleMimeTypeDisplayName(format);
+                        if (!TextUtils.isEmpty(mimeDisplay) && !mimeDisplay.equals(fmt)) {
+                            name = name.replace(mimeDisplay, fmt);
+                        }
+                    }
+                    // DIAGNOSTIC (debug builds only): append the raw Format fields so the real
+                    // sampleMimeType/codecs/label/id of a mislabeled track can be captured from a
+                    // screenshot of the subtitle-selection dialog (no adb needed).
+                    if (BuildConfig.DEBUG) {
+                        name = name + " [" + format.sampleMimeType + "|" + format.codecs
+                                + "|" + format.label + "|" + format.id + "]";
+                    }
+                }
                 Log.d("TrackDialog", "track type=" + type + " id=" + format.id + " label=" + format.label + " lang=" + format.language + " codec=" + format.codecs + " mime=" + format.sampleMimeType + " name=" + name);
                 // Keep the player's native track id with the visible item. Runtime track
                 // switching must target this stable id directly; the formatted description
