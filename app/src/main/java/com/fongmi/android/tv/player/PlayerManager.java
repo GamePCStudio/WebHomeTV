@@ -7160,7 +7160,7 @@ public class PlayerManager implements ParseCallback {
                 && e.errorCode != PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED) return false;
         // 直通已关闭（上次已降级）仍报错：不再循环降级，交给上层 onError。
         if (!PlayerSetting.isAudioPassThrough(PlayerSetting.EXO)) return false;
-        PlayerSetting.putAudioPassThrough(PlayerSetting.EXO, false);
+        PlayerSetting.putAudioPassThrough(false);
         int seq = ++prepareSeq;
         PlaySpec target = spec;
         long position = Math.max(0, getPosition());
