@@ -163,7 +163,6 @@ public class ExoUtil {
                         decoderOutput,
                         schedulingSettings))
                 .setMediaSourceFactory(buildMediaSourceFactory())
-                .setMediaCodecSelector(new ExoPassthroughMediaCodecSelector())
                 .setVideoChangeFrameRateStrategy(ExoPerformanceSetting.getFrameRateStrategy());
         if (PlaybackPerformanceSetting.isHighBufferEnabled()) builder.setLoadControl(buildEnhancedLoadControl());
         else ExoPlaybackDiagnostics.logDefaultLoadControl(PlaybackPerformanceSetting.getProfile(PlayerSetting.EXO));
@@ -679,6 +678,7 @@ public class ExoUtil {
         ExoFrameSchedulingRendererSettings.from(frameSchedulingDecision)
                 .apply(factory);
         if (PlaybackPerformanceSetting.isLateDropInputEnabled()) factory.experimentalSetLateThresholdToDropDecoderInputUs(ENHANCED_LATE_THRESHOLD_TO_DROP_INPUT_US);
+        factory.setMediaCodecSelector(new ExoPassthroughMediaCodecSelector());
         return factory.setEnableDecoderFallback(PlaybackPerformanceSetting.isDecoderFallbackEnabled()).setExtensionRendererMode(Math.max(audioRenderMode, videoRenderMode));
     }
 
