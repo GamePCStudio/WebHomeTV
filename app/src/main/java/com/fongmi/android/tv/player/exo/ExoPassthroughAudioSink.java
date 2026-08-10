@@ -55,7 +55,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     }
 
     @Override
-    public @SinkFormatSupport int getFormatSupport(Format format) {
+    public int getFormatSupport(Format format) {
         return delegate.getFormatSupport(format);
     }
 
@@ -103,12 +103,12 @@ public final class ExoPassthroughAudioSink implements AudioSink {
                 if (SpiderDebug.isEnabled()) {
                     SpiderDebug.log("exo-passthrough", "sink masquerade init failed: %s", t.getMessage());
                 }
-                throw new InitializationException(t);
+                throw new InitializationException("masquerade track init failed", 0, null, false, t);
             }
             if (track.getState() != AudioTrack.STATE_INITIALIZED) {
                 track.release();
                 track = null;
-                throw new InitializationException(new Exception("masquerade track init failed"));
+                throw new InitializationException("masquerade track not initialized", 0, null, false, null);
             }
             framesWritten = 0;
             if (SpiderDebug.isEnabled()) {
@@ -220,6 +220,21 @@ public final class ExoPassthroughAudioSink implements AudioSink {
             return;
         }
         delegate.flush();
+    }
+
+    @Override
+    public void reset() {
+        if (masquerade) {
+            if (track != null) {
+                track.pause();
+                track.flush();
+                track.release();
+                track = null;
+            }
+            framesWritten = 0;
+            return;
+        }
+        delegate.reset();
     }
 
     @Override
