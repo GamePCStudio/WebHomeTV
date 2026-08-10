@@ -123,6 +123,10 @@ public final class ExoPassthroughAudioSink implements AudioSink {
             int bytes = buffer.remaining();
             int written = track.write(buffer, bytes, AudioTrack.WRITE_BLOCKING);
             framesWritten += written / 4; // 2ch * 16bit = 4 bytes/frame
+            if (SpiderDebug.isEnabled() && framesWritten % 960 == 0) {
+                SpiderDebug.log("exo-passthrough", "sink write frames=%d bytes=%d written=%d",
+                        framesWritten, bytes, written);
+            }
             // 注意：AudioTrack.write(ByteBuffer) 会自动更新 buffer 的 position，
             // 不能再手动移动（否则 position 超限抛 IllegalArgumentException）。
             return !buffer.hasRemaining();
@@ -237,8 +241,12 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     @Override
     public long getCurrentPositionUs(boolean sourceEnded) {
         if (masquerade) {
-            if (track == null || framesWritten == 0) {
-                return CURRENT_POSITION_NOT_SET;
+            if (track == null) {
+                return 0;
+            }
+            if (SpiderDebug.isEnabled() && framesWritten % 48000 == 0) {
+                SpiderDebug.log("exo-passthrough", "sink pos frames=%d head=%d",
+                        framesWritten, track.getPlaybackHeadPosition());
             }
             return framesWritten * 1_000_000L / sampleRate;
         }
