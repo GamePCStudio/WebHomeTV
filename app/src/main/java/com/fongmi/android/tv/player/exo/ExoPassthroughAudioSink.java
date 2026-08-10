@@ -83,10 +83,6 @@ public final class ExoPassthroughAudioSink implements AudioSink {
         delegate.configure(audioSinkConfig);
     }
 
-    /** AudioSink 接口无 initialize()；DefaultAudioSink 兼容保留（无 @Override）。 */
-    public void initialize() throws AudioSink.InitializationException {
-        delegate.initialize();
-    }
 
 
     private void createMasqueradeTrack() throws AudioSink.ConfigurationException {
