@@ -133,13 +133,13 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         if (encoding == ENCODING_IEC61937) {
             // IEC61937 TrueHD/DTS-HD 容器按 192kHz 时钟传输（与 Kodi 的 m_sink_sampleRate=192000 对齐）。
             sampleRate = 192000;
-        } else if (encoding == C.ENCODING_PCM_16BIT && MimeTypes.AUDIO_TRUEHD.equals(format.sampleMimeType)) {
-            // PCM 伪装直通（Kodi 16BIT passthrough）：2ch / 48kHz，数据原样写入，
-            // 依赖 Amlogic HAL 的 sync 检测自动切换 HDMI 直通。
-            channelMask = AudioFormat.CHANNEL_OUT_STEREO;
+        } else if (encoding == C.ENCODING_DTS && MimeTypes.AUDIO_TRUEHD.equals(format.sampleMimeType)) {
+            // DTS 编码伪装（TrueHD 数据写入 DTS 编码轨道）：5.1/48kHz 与 DTS 直通参数一致。
+            channelMask = AudioFormat.CHANNEL_OUT_5POINT1;
+            channelCount = 6;
             sampleRate = PROBE_SAMPLE_RATE_HZ;
             if (SpiderDebug.isEnabled()) {
-                SpiderDebug.log("exo-passthrough", "truehd output via PCM-passthrough (2ch/48k)");
+                SpiderDebug.log("exo-passthrough", "truehd output via DTS-masquerade (5.1/48k)");
             }
         }
         int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelMask, encoding);
@@ -258,12 +258,13 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         if (iec61937) {
             return ENCODING_IEC61937;
         }
-        // PCM 伪装直通（Kodi 16BIT passthrough）：AudioTrack(PCM) 永远可创建，
-        // 数据原样写入，依赖 HAL 检测（Amlogic 固件常见行为）。
+        // DTS 编码伪装：AudioTrack(ENCODING_DTS) 创建已证实可用，bypass 直通要求 encoding
+        // 非 PCM（PCM 伪装会在 DefaultAudioSink.getFramesPerEncodedSample 抛异常）。
+        // 写入 TrueHD 裸数据，观察 Amlogic HAL 对 DTS 编码流是否做内容检测透传。
         if (SpiderDebug.isEnabled()) {
-            SpiderDebug.log("exo-passthrough", "truehd fallback to PCM-passthrough (16BIT)");
+            SpiderDebug.log("exo-passthrough", "truehd fallback to DTS-masquerade (encoding=7)");
         }
-        return C.ENCODING_PCM_16BIT;
+        return C.ENCODING_DTS;
     }
 
     /** 对指定编码尝试多组参数（48k/5.1、192k/7.1、48k/STEREO），任一成功即支持。 */
