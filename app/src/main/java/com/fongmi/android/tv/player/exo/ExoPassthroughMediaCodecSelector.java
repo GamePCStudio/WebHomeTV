@@ -63,20 +63,128 @@ public final class ExoPassthroughMediaCodecSelector implements MediaCodecSelecto
     }
 
     /**
-     * 合成 raw decoder 信息。capabilities 传 null：media3 的 isFormatSupported 对 null
-     * capabilities 直接视为支持（与官方对 MTK R9 设备的 workaround 一致）。
+     * 合成 raw decoder 信息。capabilities 通过反射构造一个不受限的音频能力
+     * （8 声道 + 常用采样率），使 media3 的 isFormatSupported 返回 true ——
+     * 直接传 null 会让 isAudioSampleRateSupportedV21/isAudioChannelCountSupportedV21
+     * 判定失败（NoSupport），渲染器只能拿 EXCEEDS_CAPABILITIES 而被 FFmpeg 软解抢占。
      */
     private static MediaCodecInfo syntheticRawDecoder(String mimeType) {
         return MediaCodecInfo.newInstance(
                 SYNTHETIC_RAW_DECODER_NAME,
                 mimeType,
                 mimeType,
-                /* capabilities= */ null,
+                createUnrestrictedAudioCapabilities(),
                 /* hardwareAccelerated= */ false,
                 /* softwareOnly= */ true,
                 /* vendor= */ false,
                 /* forceDisableAdaptive= */ false,
                 /* forceSecure= */ false);
+    }
+
+    /**
+     * 反射构造 android.media.MediaCodecInfo.CodecCapabilities（含不受限的
+     * AudioCapabilities）。仅用于合成 decoder 信息，bypass 直通不会真正创建 codec。
+     * 适配不同 Android 版本的构造器签名（7.x 与 8+ 不同）；失败时回退 null。
+     */
+    @Nullable
+    private static android.media.MediaCodecInfo.CodecCapabilities createUnrestrictedAudioCapabilities() {
+        try {
+            Object audioCaps = newInstanceBestEffort(
+                    Class.forName("android.media.AudioCapabilities"),
+                    new Object[]{8, new int[]{32000, 44100, 48000, 88200, 96000, 176400, 192000}});
+            if (audioCaps == null) {
+                if (SpiderDebug.isEnabled()) {
+                    SpiderDebug.log("exo-passthrough", "synthetic audio caps ctor not found");
+                }
+                return null;
+            }
+            android.media.MediaCodecInfo.CodecCapabilities caps = null;
+            for (java.lang.reflect.Constructor<?> ctor : android.media.MediaCodecInfo.CodecCapabilities.class.getDeclaredConstructors()) {
+                Class<?>[] params = ctor.getParameterTypes();
+                Object[] args = new Object[params.length];
+                for (int i = 0; i < params.length; i++) {
+                    if (params[i] == android.media.MediaCodecInfo.CodecProfileLevel[].class) {
+                        args[i] = new android.media.MediaCodecInfo.CodecProfileLevel[0];
+                    } else if (params[i] == String[].class) {
+                        args[i] = new String[0];
+                    } else if (params[i] == int.class) {
+                        args[i] = 0;
+                    } else if (params[i] == boolean.class) {
+                        args[i] = false;
+                    } else {
+                        args[i] = null;
+                    }
+                }
+                try {
+                    ctor.setAccessible(true);
+                    caps = (android.media.MediaCodecInfo.CodecCapabilities) ctor.newInstance(args);
+                    break;
+                } catch (Throwable ignored) {
+                    // 尝试下一个构造器
+                }
+            }
+            if (caps == null) {
+                if (SpiderDebug.isEnabled()) {
+                    SpiderDebug.log("exo-passthrough", "synthetic codec caps ctor not found");
+                }
+                return null;
+            }
+            java.lang.reflect.Field field = android.media.MediaCodecInfo.CodecCapabilities.class.getDeclaredField("mAudioCapabilities");
+            field.setAccessible(true);
+            field.set(caps, audioCaps);
+            return caps;
+        } catch (Throwable t) {
+            if (SpiderDebug.isEnabled()) {
+                SpiderDebug.log("exo-passthrough", "synthetic caps failed: %s", t.getMessage());
+            }
+            return null;
+        }
+    }
+
+    /**
+     * 用首选参数尝试实例化；失败则遍历所有构造器，用类型默认值填充参数尝试。
+     * 适配不同 Android 版本/厂商定制的内部类签名差异。
+     */
+    @Nullable
+    private static Object newInstanceBestEffort(Class<?> clazz, Object[] preferredArgs) {
+        for (java.lang.reflect.Constructor<?> ctor : clazz.getDeclaredConstructors()) {
+            Class<?>[] params = ctor.getParameterTypes();
+            if (params.length != preferredArgs.length) continue;
+            boolean match = true;
+            for (int i = 0; i < params.length; i++) {
+                if (preferredArgs[i] != null && !params[i].isInstance(preferredArgs[i])) {
+                    match = false;
+                    break;
+                }
+            }
+            if (!match) continue;
+            try {
+                ctor.setAccessible(true);
+                return ctor.newInstance(preferredArgs);
+            } catch (Throwable ignored) {
+            }
+        }
+        for (java.lang.reflect.Constructor<?> ctor : clazz.getDeclaredConstructors()) {
+            Class<?>[] params = ctor.getParameterTypes();
+            Object[] args = new Object[params.length];
+            for (int i = 0; i < params.length; i++) {
+                if (params[i] == int[].class) {
+                    args[i] = new int[]{32000, 44100, 48000, 88200, 96000, 176400, 192000};
+                } else if (params[i] == int.class) {
+                    args[i] = 8;
+                } else if (params[i] == boolean.class) {
+                    args[i] = false;
+                } else {
+                    args[i] = null;
+                }
+            }
+            try {
+                ctor.setAccessible(true);
+                return ctor.newInstance(args);
+            } catch (Throwable ignored) {
+            }
+        }
+        return null;
     }
 
     /** 源码输出（直通）相关 MIME：系统查询为空/异常时允许合成兜底。 */
