@@ -130,6 +130,10 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
             throw new ConfigurationException("Unsupported passthrough channel count: " + channelCount);
         }
         int sampleRate = format.sampleRate == Format.NO_VALUE ? PROBE_SAMPLE_RATE_HZ : format.sampleRate;
+        if (encoding == ENCODING_IEC61937) {
+            // IEC61937 TrueHD/DTS-HD 容器按 192kHz 时钟传输（与 Kodi 的 m_sink_sampleRate=192000 对齐）。
+            sampleRate = 192000;
+        }
         int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelMask, encoding);
         if (minBufferSize == AudioTrack.ERROR_BAD_VALUE || minBufferSize == AudioTrack.ERROR) {
             // Android 7.x 的 getMinBufferSize 不认 TRUEHD 等直通编码，改用固定缓冲。
@@ -214,7 +218,7 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         if (encoding == C.ENCODING_INVALID) return true;
         Boolean cached = probedSupport.get(encoding);
         if (cached != null) return cached;
-        boolean supported = probeEncoding(encoding);
+        boolean supported = probeEncoding(encoding, PROBE_SAMPLE_RATE_HZ, PROBE_CHANNEL_MASK);
         probedSupport.put(encoding, supported);
         if (SpiderDebug.isEnabled()) {
             SpiderDebug.log("exo-passthrough", "probe encoding=%d supported=%s", encoding, supported);
@@ -229,16 +233,16 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
     private static final int ENCODING_IEC61937 = 12;
 
     /**
-     * TrueHD 专用：解析可用直通编码。优先原生 TRUEHD（14）；
-     * 失败则尝试 IEC61937（12）容器（Android 7.1 的 AudioTrack 不支持 14，
-     * 但 IEC61937 是 API 21+ 标准编码）。都不可用返回 ENCODING_INVALID。
+     * TrueHD 专用：解析可用直通编码。优先原生 TRUEHD（14），失败则尝试 IEC61937（12）。
+     * 探测参数对齐 Kodi：IEC 用 STEREO mask，TrueHD/DTS-HD 用 192kHz + 7.1。
+     * 都不可用返回 ENCODING_INVALID。
      */
     private int resolveTrueHdEncoding(Format format) {
         int nativeEncoding = MimeTypes.getEncoding(format.sampleMimeType, format.codecs);
-        if (isActuallySupportedEncoding(nativeEncoding)) {
+        if (probeEncodingCombos(nativeEncoding)) {
             return nativeEncoding;
         }
-        boolean iec61937 = isActuallySupportedEncoding(ENCODING_IEC61937);
+        boolean iec61937 = probeEncodingCombos(ENCODING_IEC61937);
         if (SpiderDebug.isEnabled()) {
             SpiderDebug.log("exo-passthrough", "truehd native=%d unsupported iec61937=%s",
                     nativeEncoding, iec61937);
@@ -246,19 +250,26 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         return iec61937 ? ENCODING_IEC61937 : C.ENCODING_INVALID;
     }
 
+    /** 对指定编码尝试多组参数（48k/5.1、192k/7.1、48k/STEREO），任一成功即支持。 */
+    private boolean probeEncodingCombos(int encoding) {
+        return probeEncoding(encoding, PROBE_SAMPLE_RATE_HZ, PROBE_CHANNEL_MASK)
+                || probeEncoding(encoding, 192000, AudioFormat.CHANNEL_OUT_7POINT1)
+                || probeEncoding(encoding, PROBE_SAMPLE_RATE_HZ, AudioFormat.CHANNEL_OUT_STEREO);
+    }
+
     /**
-     * 用 AudioTrack 实测设备能否创建指定直通编码的轨道。
-     * 与 ExoPlayer 2.x 时代 AudioCapabilities 的探测方式一致，失败即视为不支持直通。
-     * 注意：Android 7.x 的 getMinBufferSize 对 TRUEHD 编码返回 ERROR_BAD_VALUE，
-     * 此时改用固定缓冲继续创建（直通写入不依赖 min buffer 精确值）。
+     * 用 AudioTrack 实测设备能否创建指定直通编码的轨道（指定采样率/声道）。
+     * 注意：AudioFormat 通过反射构造，跳过 AudioFormat.Builder 的 isValidEncoding 校验
+     * （N1 固件的白名单可能裁剪了 TRUEHD/IEC61937，但 AudioTrack 层的校验可能放行）。
      */
-    private boolean isActuallySupportedEncoding(int encoding) {
+    private boolean isActuallySupportedEncoding(int encoding, int sampleRate, int channelMask) {
         Boolean cached = probedSupport.get(encoding);
         if (cached != null) return cached;
-        boolean supported = probeEncoding(encoding);
+        boolean supported = probeEncoding(encoding, sampleRate, channelMask);
         probedSupport.put(encoding, supported);
         if (SpiderDebug.isEnabled()) {
-            SpiderDebug.log("exo-passthrough", "probe encoding=%d supported=%s", encoding, supported);
+            SpiderDebug.log("exo-passthrough", "probe encoding=%d rate=%d mask=%d supported=%s",
+                    encoding, sampleRate, channelMask, supported);
         }
         return supported;
     }
@@ -269,10 +280,10 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
      * 注意：Android 7.x 的 getMinBufferSize 对 TRUEHD 编码返回 ERROR_BAD_VALUE，
      * 此时改用固定缓冲继续创建（直通写入不依赖 min buffer 精确值）。
      */
-    private static boolean probeEncoding(int encoding) {
+    private static boolean probeEncoding(int encoding, int sampleRate, int channelMask) {
         int minBufferSize;
         try {
-            minBufferSize = AudioTrack.getMinBufferSize(PROBE_SAMPLE_RATE_HZ, PROBE_CHANNEL_MASK, encoding);
+            minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelMask, encoding);
         } catch (Throwable t) {
             // Android 7.x 的 getMinBufferSize 对部分直通编码（如 TRUEHD）可能抛异常/返回 ERROR。
             if (SpiderDebug.isEnabled()) {
@@ -288,16 +299,19 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         }
         AudioTrack track = null;
         try {
+            AudioFormat format = createAudioFormatReflective(encoding, sampleRate, channelMask);
+            if (format == null) {
+                if (SpiderDebug.isEnabled()) {
+                    SpiderDebug.log("exo-passthrough", "probe format creation failed encoding=%d", encoding);
+                }
+                return false;
+            }
             track = new AudioTrack.Builder()
                     .setAudioAttributes(new AudioAttributes.Builder()
                             .setUsage(AudioAttributes.USAGE_MEDIA)
                             .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
                             .build())
-                    .setAudioFormat(new AudioFormat.Builder()
-                            .setSampleRate(PROBE_SAMPLE_RATE_HZ)
-                            .setChannelMask(PROBE_CHANNEL_MASK)
-                            .setEncoding(encoding)
-                            .build())
+                    .setAudioFormat(format)
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .setBufferSizeInBytes(Math.max(minBufferSize * 4, PASSTHROUGH_FALLBACK_BUFFER_BYTES))
                     .build();
@@ -313,6 +327,30 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
                     track.release();
                 } catch (Throwable ignored) {
                 }
+            }
+        }
+    }
+
+    /**
+     * 反射构造 AudioFormat，跳过 AudioFormat.Builder 的 isValidEncoding 白名单校验
+     * （N1 固件裁剪了 TRUEHD/IEC61937 时 Builder 会抛 Invalid encoding，但
+     * AudioTrack 层的校验可能放行——Kodi 的直通创建即依赖此路径）。
+     */
+    private static AudioFormat createAudioFormatReflective(int encoding, int sampleRate, int channelMask) {
+        try {
+            java.lang.reflect.Constructor<AudioFormat> ctor =
+                    AudioFormat.class.getDeclaredConstructor(int.class, int.class, int.class, int.class);
+            ctor.setAccessible(true);
+            return ctor.newInstance(encoding, sampleRate, channelMask, 0);
+        } catch (Throwable t) {
+            try {
+                return new AudioFormat.Builder()
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(channelMask)
+                        .setEncoding(encoding)
+                        .build();
+            } catch (Throwable t2) {
+                return null;
             }
         }
     }
