@@ -1,4 +1,4 @@
-﻿[versions]
+[versions]
 agp = "9.2.1"
 python = "17.0.0"
 minSdk = "23"
