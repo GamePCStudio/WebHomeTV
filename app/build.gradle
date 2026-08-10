@@ -67,6 +67,13 @@ android {
     }
 
     signingConfigs {
+        debug {
+            // 固定 debug keystore（仓库内置），保证 CI/本地每次构建签名一致，可覆盖安装。
+            storeFile file("signing/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
         release {
             if (hasReleaseSigning) {
                 storeFile file(localProps['storeFile'])
@@ -78,6 +85,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.debug
+        }
         release {
             minifyEnabled = !fastRelease
             shrinkResources = !fastRelease
