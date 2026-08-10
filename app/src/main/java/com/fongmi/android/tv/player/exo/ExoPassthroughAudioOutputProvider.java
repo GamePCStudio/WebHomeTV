@@ -133,6 +133,14 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         if (encoding == ENCODING_IEC61937) {
             // IEC61937 TrueHD/DTS-HD 容器按 192kHz 时钟传输（与 Kodi 的 m_sink_sampleRate=192000 对齐）。
             sampleRate = 192000;
+        } else if (encoding == C.ENCODING_PCM_16BIT && MimeTypes.AUDIO_TRUEHD.equals(format.sampleMimeType)) {
+            // PCM 伪装直通（Kodi 16BIT passthrough）：2ch / 48kHz，数据原样写入，
+            // 依赖 Amlogic HAL 的 sync 检测自动切换 HDMI 直通。
+            channelMask = AudioFormat.CHANNEL_OUT_STEREO;
+            sampleRate = PROBE_SAMPLE_RATE_HZ;
+            if (SpiderDebug.isEnabled()) {
+                SpiderDebug.log("exo-passthrough", "truehd output via PCM-passthrough (2ch/48k)");
+            }
         }
         int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelMask, encoding);
         if (minBufferSize == AudioTrack.ERROR_BAD_VALUE || minBufferSize == AudioTrack.ERROR) {
@@ -233,9 +241,9 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
     private static final int ENCODING_IEC61937 = 12;
 
     /**
-     * TrueHD 专用：解析可用直通编码。优先原生 TRUEHD（14），失败则尝试 IEC61937（12）。
-     * 探测参数对齐 Kodi：IEC 用 STEREO mask，TrueHD/DTS-HD 用 192kHz + 7.1。
-     * 都不可用返回 ENCODING_INVALID。
+     * TrueHD 专用：解析可用直通编码。优先原生 TRUEHD（14），失败则尝试 IEC61937（12），
+     * 再失败则回退「PCM 伪装直通」（Kodi 的 16BIT passthrough 模式：用 PCM_16BIT 编码
+     * 原样写入压缩数据，依赖 Amlogic HAL 的 sync 检测自动切换 HDMI 直通）。
      */
     private int resolveTrueHdEncoding(Format format) {
         int nativeEncoding = MimeTypes.getEncoding(format.sampleMimeType, format.codecs);
@@ -247,7 +255,15 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
             SpiderDebug.log("exo-passthrough", "truehd native=%d unsupported iec61937=%s",
                     nativeEncoding, iec61937);
         }
-        return iec61937 ? ENCODING_IEC61937 : C.ENCODING_INVALID;
+        if (iec61937) {
+            return ENCODING_IEC61937;
+        }
+        // PCM 伪装直通（Kodi 16BIT passthrough）：AudioTrack(PCM) 永远可创建，
+        // 数据原样写入，依赖 HAL 检测（Amlogic 固件常见行为）。
+        if (SpiderDebug.isEnabled()) {
+            SpiderDebug.log("exo-passthrough", "truehd fallback to PCM-passthrough (16BIT)");
+        }
+        return C.ENCODING_PCM_16BIT;
     }
 
     /** 对指定编码尝试多组参数（48k/5.1、192k/7.1、48k/STEREO），任一成功即支持。 */
