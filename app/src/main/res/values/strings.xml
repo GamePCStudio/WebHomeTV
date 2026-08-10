@@ -969,6 +969,13 @@
     <string name="mpv_config_close">Close</string>
     <string name="player_libass">libass</string>
     <string name="player_caption">Caption style</string>
+    <string name="player_auto_bilingual">Auto Bilingual Subtitle</string>
+    <string name="player_auto_bilingual_ready">Bilingual subtitle generated</string>
+    <string-array name="select_auto_bilingual">
+        <item>Off</item>
+        <item>Chinese + English</item>
+        <item>English + Chinese</item>
+    </string-array>
     <string name="player_background">Background play</string>
     <string name="player_audio_decode">Audio software decode</string>
     <string name="player_audio_passthrough">Audio passthrough</string>

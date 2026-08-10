@@ -4416,6 +4416,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     protected void onTracksChanged() {
+        BilingualSubtitleController.onPlaybackStarted(player(), getPlaybackKey());
         updateAudioOnlyState();
         syncPiPForPlaybackMode();
         refreshLyrics();

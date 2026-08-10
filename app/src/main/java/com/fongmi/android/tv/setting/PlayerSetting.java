@@ -314,6 +314,23 @@ public class PlayerSetting {
         return new Intent(Settings.ACTION_CAPTIONING_SETTINGS).resolveActivity(App.get().getPackageManager()) != null;
     }
 
+    // ===== 自动双语字幕 (WebHomeTV.A2S) =====
+    public static final int AUTO_BILINGUAL_OFF = 0;
+    public static final int AUTO_BILINGUAL_ZH_EN = 1;
+    public static final int AUTO_BILINGUAL_EN_ZH = 2;
+
+    public static int getAutoBilingualSubtitle() {
+        return Prefers.getInt("auto_bilingual_subtitle", AUTO_BILINGUAL_OFF);
+    }
+
+    public static void putAutoBilingualSubtitle(int mode) {
+        Prefers.put("auto_bilingual_subtitle", mode < AUTO_BILINGUAL_OFF || mode > AUTO_BILINGUAL_EN_ZH ? AUTO_BILINGUAL_OFF : mode);
+    }
+
+    public static boolean isAutoBilingualEnabled() {
+        return getAutoBilingualSubtitle() != AUTO_BILINGUAL_OFF;
+    }
+
     public static boolean isTunnel() {
         return Prefers.getBoolean("tunnel");
     }

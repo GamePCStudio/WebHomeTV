@@ -951,6 +951,13 @@
     <string name="mpv_config_close">關閉</string>
     <string name="player_libass">字幕渲染</string>
     <string name="player_caption">字幕樣式</string>
+    <string name="player_auto_bilingual">自動雙語字幕</string>
+    <string name="player_auto_bilingual_ready">雙語字幕已生成</string>
+    <string-array name="select_auto_bilingual">
+        <item>關閉</item>
+        <item>中英</item>
+        <item>英中</item>
+    </string-array>
     <string name="player_background">背景播放</string>
     <string name="player_audio_decode">音訊軟解</string>
     <string name="player_audio_passthrough">音訊直通</string>

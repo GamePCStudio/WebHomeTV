@@ -403,6 +403,13 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.aac.setVisibility(View.GONE);
     }
 
+    private void setAutoBilingual(View view) {
+        ChoiceDialog.showSingle(this, R.string.player_auto_bilingual, autoBilingual, PlayerSetting.getAutoBilingualSubtitle(), which -> {
+            PlayerSetting.putAutoBilingualSubtitle(which);
+            mBinding.autoBilingualText.setText(autoBilingual[which]);
+        });
+    }
+
     private void setCaption(View view) {
         PlayerSetting.putCaption(!PlayerSetting.isCaption());
         mBinding.captionText.setText(caption[PlayerSetting.isCaption() ? 1 : 0]);

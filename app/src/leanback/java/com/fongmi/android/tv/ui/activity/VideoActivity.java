@@ -3695,6 +3695,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     @Override
     protected void onTracksChanged() {
+        BilingualSubtitleController.onPlaybackStarted(player(), getPlaybackKey());
         refreshLyrics();
         setTrackVisible();
         mClock.setCallback(this);
