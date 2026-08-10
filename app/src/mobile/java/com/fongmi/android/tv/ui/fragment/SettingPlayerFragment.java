@@ -46,6 +46,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     private String[] backBuffer;
     private String[] bufferBytes;
     private String[] caption;
+    private String[] autoBilingual;
     private String[] kernel;
     private String[] padLiveMode;
     private String[] playCache;
@@ -89,6 +90,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.audioPassThroughText.setText(getSwitch(PlayerSetting.isAudioPassThrough()));
         mBinding.videoDecodeText.setText(getSwitch(PlayerSetting.isVideoPrefer()));
         mBinding.caption.setVisibility(PlayerSetting.hasCaption() ? View.VISIBLE : View.GONE);
+        mBinding.autoBilingualText.setText((autoBilingual = ResUtil.getStringArray(R.array.select_auto_bilingual))[PlayerSetting.getAutoBilingualSubtitle()]);
         mBinding.osdText.setText(getOsdText(osd = ResUtil.getStringArray(R.array.select_player_osd)));
         mBinding.kernelText.setText((kernel = ResUtil.getStringArray(R.array.select_player_kernel))[PlayerSetting.getPlayer()]);
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
@@ -128,6 +130,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.tunnel.setOnClickListener(this::setTunnel);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
+        mBinding.autoBilingual.setOnClickListener(this::setAutoBilingual);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.background.setOnClickListener(this::onBackground);

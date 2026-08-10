@@ -165,6 +165,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
+import com.fongmi.android.tv.subtitle.BilingualSubtitleController;
+
 public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.Listener, TrackDialog.Listener, ControlDialog.Listener, ArrayAdapter.OnClickListener, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, ParseAdapter.OnClickListener, CastDialog.Listener, Clock.Callback {
 
     private static final long LYRICS_OFFSET_MIN_MS = -5000L;

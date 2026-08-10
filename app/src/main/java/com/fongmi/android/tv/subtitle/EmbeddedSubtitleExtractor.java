@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
+import androidx.media3.common.util.ParsableByteArray;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DataSpec;
@@ -212,6 +213,16 @@ public final class EmbeddedSubtitleExtractor {
         public void sampleData(ByteBuffer data, int length) {
             byte[] tmp = new byte[Math.max(0, length)];
             data.get(tmp, 0, Math.min(length, data.remaining()));
+            buffer.write(tmp, 0, length);
+        }
+
+        @Override
+        public void sampleData(ParsableByteArray data, int length, int offset) {
+            byte[] tmp = new byte[Math.max(0, length)];
+            int base = data.getPosition() + offset;
+            if (base >= 0 && base + length <= data.getData().length) {
+                System.arraycopy(data.getData(), base, tmp, 0, length);
+            }
             buffer.write(tmp, 0, length);
         }
 

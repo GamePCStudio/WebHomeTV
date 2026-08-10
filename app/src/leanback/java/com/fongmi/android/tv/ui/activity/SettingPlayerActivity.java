@@ -22,6 +22,7 @@ import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.BufferDialog;
+import com.fongmi.android.tv.ui.dialog.ChoiceDialog;
 import com.fongmi.android.tv.ui.dialog.LutDialog;
 import com.fongmi.android.tv.ui.dialog.MpvConfigDialog;
 import com.fongmi.android.tv.ui.dialog.PlaybackPerformanceDialog;
@@ -42,6 +43,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     private String[] backBuffer;
     private String[] bufferBytes;
     private String[] caption;
+    private String[] autoBilingual;
     private String[] kernel;
     private String[] playCache;
     private String[] render;
@@ -92,6 +94,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         setMpvRows();
         mBinding.renderText.setText((render = ResUtil.getStringArray(R.array.select_render))[PlayerSetting.getRender()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
+        mBinding.autoBilingualText.setText((autoBilingual = ResUtil.getStringArray(R.array.select_auto_bilingual))[PlayerSetting.getAutoBilingualSubtitle()]);
         hidePerformanceRows();
     }
 
@@ -122,6 +125,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.tunnel.setOnClickListener(this::setTunnel);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
+        mBinding.autoBilingual.setOnClickListener(this::setAutoBilingual);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.background.setOnClickListener(this::onBackground);
