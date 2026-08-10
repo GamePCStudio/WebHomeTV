@@ -5,8 +5,8 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.Nullable;
 import androidx.media3.common.C;
+import androidx.media3.common.DataReader;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.util.ParsableByteArray;
@@ -19,14 +19,13 @@ import androidx.media3.extractor.DefaultExtractorInput;
 import androidx.media3.extractor.Extractor;
 import androidx.media3.extractor.ExtractorInput;
 import androidx.media3.extractor.ExtractorOutput;
-import androidx.media3.extractor.mkv.MatroskaExtractor;
 import androidx.media3.extractor.PositionHolder;
 import androidx.media3.extractor.SeekMap;
 import androidx.media3.extractor.TrackOutput;
+import androidx.media3.extractor.mkv.MatroskaExtractor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +37,11 @@ import java.util.Map;
  *
  * 独立于播放器解析媒体文件(MKV 优先),通过 Media3 MatroskaExtractor 管线
  * 截获所有文本字幕轨的原始字节,用于自动双语字幕合成。
+ *
+ * 适配定制 Media3(1.11.0-alpha01-fongmi)接口:
+ * - TrackOutput 抽象方法为 sampleData(DataReader,int,boolean,int) 与
+ *   sampleData(ParsableByteArray,int,int)
+ * - ExtractorInput 无 seek(long),RESULT_SEEK 时重新打开 DataSource 定位
  *
  * 只支持文本轨(SRT / ASS / SSA / VTT);图形轨(PGS / VobSub / DVB)会被跳过。
  */
@@ -95,9 +99,10 @@ public final class EmbeddedSubtitleExtractor {
 
         Uri uri = Uri.parse(url);
         DataSource dataSource = buildDataSource(context, headers);
+        long position = 0;
         dataSource.open(new DataSpec.Builder().setUri(uri).build());
         try {
-            ExtractorInput input = new DefaultExtractorInput(dataSource, 0, C.LENGTH_UNSET);
+            ExtractorInput input = new DefaultExtractorInput(dataSource, position, C.LENGTH_UNSET);
             MatroskaExtractor extractor = new MatroskaExtractor();
             Collector collector = new Collector();
             extractor.init(collector);
@@ -105,7 +110,12 @@ public final class EmbeddedSubtitleExtractor {
             int result;
             while ((result = extractor.read(input, holder)) != Extractor.RESULT_END_OF_INPUT) {
                 if (result == Extractor.RESULT_SEEK) {
-                    input.seek(holder.position);
+                    // 定制 Media3 的 ExtractorInput 没有 seek():重新打开 DataSource 定位
+                    dataSource.close();
+                    dataSource = buildDataSource(context, headers);
+                    position = holder.position;
+                    dataSource.open(new DataSpec.Builder().setUri(uri).setPosition(position).build());
+                    input = new DefaultExtractorInput(dataSource, position, C.LENGTH_UNSET);
                 }
             }
             tracks.addAll(collector.build());
@@ -200,7 +210,7 @@ public final class EmbeddedSubtitleExtractor {
         }
 
         @Override
-        public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput) throws IOException {
+        public int sampleData(DataReader input, int length, boolean allowEndOfInput, int sampleDataPart) throws IOException {
             byte[] tmp = new byte[Math.max(0, length)];
             int read = input.read(tmp, 0, length);
             if (read > 0) {
@@ -210,20 +220,14 @@ public final class EmbeddedSubtitleExtractor {
         }
 
         @Override
-        public void sampleData(ByteBuffer data, int length) {
+        public void sampleData(ParsableByteArray data, int length, int sampleDataPart) {
             byte[] tmp = new byte[Math.max(0, length)];
-            data.get(tmp, 0, Math.min(length, data.remaining()));
-            buffer.write(tmp, 0, length);
-        }
-
-        @Override
-        public void sampleData(ParsableByteArray data, int length, int offset) {
-            byte[] tmp = new byte[Math.max(0, length)];
-            int base = data.getPosition() + offset;
+            int base = data.getPosition();
             if (base >= 0 && base + length <= data.getData().length) {
                 System.arraycopy(data.getData(), base, tmp, 0, length);
             }
             buffer.write(tmp, 0, length);
+            data.skipBytes(length);
         }
 
         @Override
