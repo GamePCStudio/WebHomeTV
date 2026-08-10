@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.subtitle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
