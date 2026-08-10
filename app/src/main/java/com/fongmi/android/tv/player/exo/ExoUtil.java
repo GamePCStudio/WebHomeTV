@@ -718,7 +718,8 @@ public class ExoUtil {
         } else {
             builder.setAudioOutputProvider(new AudioTrackAudioOutputProvider.Builder(null).build());
         }
-        return builder.build();
+        // 自定义 Sink：TrueHD 伪装（DTS 轨道直写原始数据），其余格式委托 DefaultAudioSink。
+        return new ExoPassthroughAudioSink(builder.build());
     }
 
     private static MediaSource.Factory buildMediaSourceFactory() {
