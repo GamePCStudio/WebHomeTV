@@ -258,13 +258,12 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         if (iec61937) {
             return ENCODING_IEC61937;
         }
-        // DTS 编码伪装：AudioTrack(ENCODING_DTS) 创建已证实可用，bypass 直通要求 encoding
-        // 非 PCM（PCM 伪装会在 DefaultAudioSink.getFramesPerEncodedSample 抛异常）。
-        // 写入 TrueHD 裸数据，观察 Amlogic HAL 对 DTS 编码流是否做内容检测透传。
+        // N1 上 TrueHD 源码输出不可行（AudioTrack 拒绝 14/12；media3 bypass 数据路径
+        // 对 true-hd 存在断流问题）。返回 INVALID → 走 FFmpeg 软解（稳定）。
         if (SpiderDebug.isEnabled()) {
-            SpiderDebug.log("exo-passthrough", "truehd fallback to DTS-masquerade (encoding=7)");
+            SpiderDebug.log("exo-passthrough", "truehd passthrough unavailable, fallback to decode");
         }
-        return C.ENCODING_DTS;
+        return C.ENCODING_INVALID;
     }
 
     /** 对指定编码尝试多组参数（48k/5.1、192k/7.1、48k/STEREO），任一成功即支持。 */
