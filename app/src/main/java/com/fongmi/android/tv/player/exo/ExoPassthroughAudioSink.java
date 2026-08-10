@@ -9,6 +9,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackParameters;
+import androidx.media3.common.AuxEffectInfo;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.audio.AudioSink;
 import androidx.media3.exoplayer.audio.DefaultAudioSink;
@@ -33,6 +34,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
 
     private final DefaultAudioSink delegate;
 
+    private Format formatOfLastConfig;
     private boolean masquerade;
     private AudioTrack track;
     private int sampleRate;
@@ -62,13 +64,16 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     @Override
     public void configure(AudioSink.AudioSinkConfig audioSinkConfig) throws AudioSink.ConfigurationException {
         Format format = audioSinkConfig.format;
+        formatOfLastConfig = format;
         if (MimeTypes.AUDIO_TRUEHD.equals(format.sampleMimeType)) {
-            // TrueHD 伪装：DTS(7) 轨道 + 原始数据直写。
+            // TrueHD 伪装：DTS(7) 轨道 + 原始数据直写（AudioSink 接口无 initialize，
+            // track 在 configure 阶段创建）。
             masquerade = true;
             encoding = C.ENCODING_DTS;
             sampleRate = 48000;
             channelMask = AudioFormat.CHANNEL_OUT_5POINT1;
             framesWritten = 0;
+            createMasqueradeTrack();
             if (SpiderDebug.isEnabled()) {
                 SpiderDebug.log("exo-passthrough", "sink masquerade truehd->dts(5.1/48k)");
             }
@@ -78,47 +83,43 @@ public final class ExoPassthroughAudioSink implements AudioSink {
         delegate.configure(audioSinkConfig);
     }
 
-    @Override
+    /** AudioSink 接口无 initialize()；DefaultAudioSink 兼容保留（无 @Override）。 */
     public void initialize() throws AudioSink.InitializationException {
-        if (masquerade) {
+        delegate.initialize();
+    }
+
+
+    private void createMasqueradeTrack() throws AudioSink.ConfigurationException {
+        try {
             int minBuf = AudioTrack.getMinBufferSize(sampleRate, channelMask, encoding);
             if (minBuf <= 0) {
                 minBuf = 64 * 1024;
             }
-            try {
-                track = new AudioTrack.Builder()
-                        .setAudioAttributes(new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_MEDIA)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-                                .build())
-                        .setAudioFormat(new AudioFormat.Builder()
-                                .setSampleRate(sampleRate)
-                                .setChannelMask(channelMask)
-                                .setEncoding(encoding)
-                                .build())
-                        .setTransferMode(AudioTrack.MODE_STREAM)
-                        .setBufferSizeInBytes(Math.max(minBuf * 4, 64 * 1024))
-                        .build();
-            } catch (Throwable t) {
-                if (SpiderDebug.isEnabled()) {
-                    SpiderDebug.log("exo-passthrough", "sink masquerade init failed: %s", t.getMessage());
-                }
-                throw new AudioSink.InitializationException("masquerade track init failed", 0, null, false, t);
-            }
+            track = new AudioTrack.Builder()
+                    .setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                            .build())
+                    .setAudioFormat(new AudioFormat.Builder()
+                            .setSampleRate(sampleRate)
+                            .setChannelMask(channelMask)
+                            .setEncoding(encoding)
+                            .build())
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .setBufferSizeInBytes(Math.max(minBuf * 4, 64 * 1024))
+                    .build();
             if (track.getState() != AudioTrack.STATE_INITIALIZED) {
                 track.release();
                 track = null;
-                throw new AudioSink.InitializationException("masquerade track not initialized", 0, null, false, null);
+                throw new AudioSink.ConfigurationException("masquerade track not initialized", formatOfLastConfig);
             }
-            framesWritten = 0;
+        } catch (Throwable t) {
             if (SpiderDebug.isEnabled()) {
-                SpiderDebug.log("exo-passthrough", "sink masquerade track initialized");
+                SpiderDebug.log("exo-passthrough", "sink masquerade create failed: %s", t.getMessage());
             }
-            return;
+            throw new AudioSink.ConfigurationException("masquerade track create failed", formatOfLastConfig);
         }
-        delegate.initialize();
     }
-
     @Override
     public boolean handleBuffer(ByteBuffer buffer, long presentationTimeUs, int encodedAccessUnitCount)
             throws AudioSink.InitializationException, AudioSink.WriteException {
@@ -144,6 +145,20 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     }
 
 
+
+    @Override
+    public void setVolume(float volume) {
+        if (!masquerade) {
+            delegate.setVolume(volume);
+        }
+    }
+
+    @Override
+    public void setAuxEffectInfo(AuxEffectInfo auxEffectInfo) {
+        if (!masquerade) {
+            delegate.setAuxEffectInfo(auxEffectInfo);
+        }
+    }
     @Override
     public void pause() {
         if (masquerade) {
