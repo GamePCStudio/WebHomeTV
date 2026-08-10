@@ -123,7 +123,8 @@ public final class ExoPassthroughAudioSink implements AudioSink {
             int bytes = buffer.remaining();
             int written = track.write(buffer, bytes, AudioTrack.WRITE_BLOCKING);
             framesWritten += written / 4; // 2ch * 16bit = 4 bytes/frame
-            buffer.position(buffer.position() + written);
+            // 注意：AudioTrack.write(ByteBuffer) 会自动更新 buffer 的 position，
+            // 不能再手动移动（否则 position 超限抛 IllegalArgumentException）。
             return !buffer.hasRemaining();
         }
         return delegate.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount);
