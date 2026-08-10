@@ -59,7 +59,13 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
         }
         // API < 29：直通编码完全由 AudioTrack 实测决定（不信任 HDMI 广播声明）。
         if (Build.VERSION.SDK_INT < 29 && isProbeablePassthrough(mapped.format)) {
-            boolean supported = isActuallySupported(mapped.format);
+            boolean supported;
+            if (MimeTypes.AUDIO_TRUEHD.equals(mapped.format.sampleMimeType)) {
+                // TrueHD：原生编码或 IEC61937 容器任一可用即支持。
+                supported = resolveTrueHdEncoding(mapped.format) != C.ENCODING_INVALID;
+            } else {
+                supported = isActuallySupported(mapped.format);
+            }
             if (SpiderDebug.isEnabled()) {
                 SpiderDebug.log("exo-passthrough", "support mime=%s supported=%s sdk=%d",
                         mapped.format.sampleMimeType, supported, Build.VERSION.SDK_INT);
@@ -89,22 +95,32 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
     public OutputConfig getOutputConfig(FormatConfig formatConfig) throws ConfigurationException {
         FormatConfig mapped = maybeDowngradeDtsHd(formatConfig);
         // API < 29 且实测支持：自行构造直通配置，绕过系统 AudioCapabilities 编码列表。
-        if (Build.VERSION.SDK_INT < 29
-                && isProbeablePassthrough(mapped.format)
-                && isActuallySupported(mapped.format)) {
-            return buildPassthroughOutputConfig(mapped);
+        if (Build.VERSION.SDK_INT < 29 && isProbeablePassthrough(mapped.format)) {
+            boolean supported = MimeTypes.AUDIO_TRUEHD.equals(mapped.format.sampleMimeType)
+                    ? resolveTrueHdEncoding(mapped.format) != C.ENCODING_INVALID
+                    : isActuallySupported(mapped.format);
+            if (supported) {
+                return buildPassthroughOutputConfig(mapped);
+            }
         }
         return super.getOutputConfig(mapped);
     }
 
     /**
-     * 手工构造直通 OutputConfig。编码来自格式自身（DTS-HD 已降级为 ENCODING_DTS），
-     * 声道掩码按声道数映射，缓冲区按 AudioTrack 最小缓冲放大。
+     * 手工构造直通 OutputConfig。编码来自格式自身（DTS-HD 已降级为 ENCODING_DTS；
+     * TrueHD 在 Android 7.x 上回退为 IEC61937 容器编码）。声道掩码按声道数映射，
+     * 缓冲区按 AudioTrack 最小缓冲放大。
      */
-    private static OutputConfig buildPassthroughOutputConfig(FormatConfig config)
+    private OutputConfig buildPassthroughOutputConfig(FormatConfig config)
             throws ConfigurationException {
         Format format = config.format;
         int encoding = MimeTypes.getEncoding(format.sampleMimeType, format.codecs);
+        if (MimeTypes.AUDIO_TRUEHD.equals(format.sampleMimeType)) {
+            encoding = resolveTrueHdEncoding(format);
+            if (encoding == ENCODING_IEC61937 && SpiderDebug.isEnabled()) {
+                SpiderDebug.log("exo-passthrough", "truehd output via IEC61937 container");
+            }
+        }
         if (encoding == C.ENCODING_INVALID) {
             throw new ConfigurationException("Unable to configure passthrough for: " + format);
         }
@@ -208,6 +224,44 @@ public final class ExoPassthroughAudioOutputProvider extends ForwardingAudioOutp
 
     /** 直通编码固定缓冲（AOSP 7.x 的 getMinBufferSize 不支持 TRUEHD 等编码时使用）。 */
     private static final int PASSTHROUGH_FALLBACK_BUFFER_BYTES = 64 * 1024;
+
+    /** AudioFormat.ENCODING_IEC61937（API 21+，值 12）：TrueHD 的 IEC61937 容器传输候选。 */
+    private static final int ENCODING_IEC61937 = 12;
+
+    /**
+     * TrueHD 专用：解析可用直通编码。优先原生 TRUEHD（14）；
+     * 失败则尝试 IEC61937（12）容器（Android 7.1 的 AudioTrack 不支持 14，
+     * 但 IEC61937 是 API 21+ 标准编码）。都不可用返回 ENCODING_INVALID。
+     */
+    private int resolveTrueHdEncoding(Format format) {
+        int nativeEncoding = MimeTypes.getEncoding(format.sampleMimeType, format.codecs);
+        if (isActuallySupportedEncoding(nativeEncoding)) {
+            return nativeEncoding;
+        }
+        boolean iec61937 = isActuallySupportedEncoding(ENCODING_IEC61937);
+        if (SpiderDebug.isEnabled()) {
+            SpiderDebug.log("exo-passthrough", "truehd native=%d unsupported iec61937=%s",
+                    nativeEncoding, iec61937);
+        }
+        return iec61937 ? ENCODING_IEC61937 : C.ENCODING_INVALID;
+    }
+
+    /**
+     * 用 AudioTrack 实测设备能否创建指定直通编码的轨道。
+     * 与 ExoPlayer 2.x 时代 AudioCapabilities 的探测方式一致，失败即视为不支持直通。
+     * 注意：Android 7.x 的 getMinBufferSize 对 TRUEHD 编码返回 ERROR_BAD_VALUE，
+     * 此时改用固定缓冲继续创建（直通写入不依赖 min buffer 精确值）。
+     */
+    private boolean isActuallySupportedEncoding(int encoding) {
+        Boolean cached = probedSupport.get(encoding);
+        if (cached != null) return cached;
+        boolean supported = probeEncoding(encoding);
+        probedSupport.put(encoding, supported);
+        if (SpiderDebug.isEnabled()) {
+            SpiderDebug.log("exo-passthrough", "probe encoding=%d supported=%s", encoding, supported);
+        }
+        return supported;
+    }
 
     /**
      * 用 AudioTrack 实测设备能否创建指定直通编码的轨道。
