@@ -45,7 +45,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     }
 
     @Override
-    public void setListener(Listener listener) {
+    public void setListener(AudioSink.Listener listener) {
         delegate.setListener(listener);
     }
 
@@ -60,7 +60,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     }
 
     @Override
-    public void configure(AudioSinkConfig audioSinkConfig) throws ConfigurationException {
+    public void configure(AudioSink.AudioSinkConfig audioSinkConfig) throws AudioSink.ConfigurationException {
         Format format = audioSinkConfig.format;
         if (MimeTypes.AUDIO_TRUEHD.equals(format.sampleMimeType)) {
             // TrueHD 伪装：DTS(7) 轨道 + 原始数据直写。
@@ -79,7 +79,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     }
 
     @Override
-    public void initialize() throws InitializationException {
+    public void initialize() throws AudioSink.InitializationException {
         if (masquerade) {
             int minBuf = AudioTrack.getMinBufferSize(sampleRate, channelMask, encoding);
             if (minBuf <= 0) {
@@ -103,12 +103,12 @@ public final class ExoPassthroughAudioSink implements AudioSink {
                 if (SpiderDebug.isEnabled()) {
                     SpiderDebug.log("exo-passthrough", "sink masquerade init failed: %s", t.getMessage());
                 }
-                throw new InitializationException("masquerade track init failed", 0, null, false, t);
+                throw new AudioSink.InitializationException("masquerade track init failed", 0, null, false, t);
             }
             if (track.getState() != AudioTrack.STATE_INITIALIZED) {
                 track.release();
                 track = null;
-                throw new InitializationException("masquerade track not initialized", 0, null, false, null);
+                throw new AudioSink.InitializationException("masquerade track not initialized", 0, null, false, null);
             }
             framesWritten = 0;
             if (SpiderDebug.isEnabled()) {
@@ -121,7 +121,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
 
     @Override
     public boolean handleBuffer(ByteBuffer buffer, long presentationTimeUs, int encodedAccessUnitCount)
-            throws InitializationException, WriteException {
+            throws AudioSink.InitializationException, AudioSink.WriteException {
         if (masquerade && track != null) {
             int bytes = buffer.remaining();
             int written = track.write(buffer, bytes, AudioTrack.WRITE_BLOCKING);
@@ -143,6 +143,17 @@ public final class ExoPassthroughAudioSink implements AudioSink {
         delegate.play();
     }
 
+
+    @Override
+    public void pause() {
+        if (masquerade) {
+            if (track != null) {
+                track.pause();
+            }
+            return;
+        }
+        delegate.pause();
+    }
     @Override
     public void handleDiscontinuity() {
         if (masquerade) {
@@ -153,7 +164,7 @@ public final class ExoPassthroughAudioSink implements AudioSink {
     }
 
     @Override
-    public void playToEndOfStream() throws WriteException {
+    public void playToEndOfStream() throws AudioSink.WriteException {
         if (!masquerade) {
             delegate.playToEndOfStream();
         }
