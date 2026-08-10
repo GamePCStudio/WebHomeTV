@@ -9,7 +9,6 @@ import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackParameters;
-import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.AuxEffectInfo;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.audio.AudioSink;
@@ -153,8 +152,13 @@ public final class ExoPassthroughAudioSink implements AudioSink {
         return masquerade ? false : delegate.getSkipSilenceEnabled();
     }
 
+
     @Override
-    public void setAudioAttributes(AudioAttributes audioAttributes) {
+    public androidx.media3.common.AudioAttributes getAudioAttributes() {
+        return masquerade ? androidx.media3.common.AudioAttributes.DEFAULT : delegate.getAudioAttributes();
+    }
+    @Override
+    public void setAudioAttributes(androidx.media3.common.AudioAttributes audioAttributes) {
         if (!masquerade) {
             delegate.setAudioAttributes(audioAttributes);
         }
