@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.66 — 音频效果（EXO 均衡器，API 28+） (2026-08-11)
+
+从 TV-fongmi 移植音频均衡器（首期，EXO 优先）：轨道弹窗新增「设置」入口（音频轨显示），可切换音效预设与开/关。
+
+### 新增
+
+- **音频均衡器**: 基于 Android `DynamicsProcessing`（API 28+）硬件均衡器，挂到 EXO 音频会话，支持 12 个预设（自然/人声/影院/低音/高音/流行/摇滚/舞曲/电子/嘻哈/爵士/古典）+ 关闭
+- 移植自包含引擎：`AudioEffectConfig` / `AudioEffectBands` / `AudioEffectPreset` / `AudioPresetLevels` / `AudioChannelMode` / `AudioEqualizerController`；`AudioSetting` 偏好
+- 新增 `AudioSettingDialog`（启用开关 + 预设 chips），轨道弹窗音频轨进入
+
+### 修改
+
+- `ExoPlayerEngine` 实现 `applyAudioSetting()` / `clearAudioEffect()` / `supportsAudioSetting()`（读取 EXO 音频声道数构建 EQ 配置）
+- `PlayerEngine` 新增 `applyAudioSetting()` / `clearAudioEffect()` / `supportsAudioSetting()` 默认实现；`PlayerManager` 新增对应委托与 `canSetAudioSetting()`
+
+### 说明
+
+- 首期仅含均衡器预设 + 限幅（`DynamicsProcessing`），**不含**软件 DSP 通路（需自定义渲染器注入 `AudioChannelMix`，留待后续）与 MPV 滤镜；API 28 以下优雅降级为「不支持」
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.65 — 视频色彩调节支持 MPV (2026-08-11)
 
 补全视频色彩调节的 MPV 支持：此前仅 EXO 可用，现通过 MPV 原生 VO 属性（亮度/对比度/饱和度/伽马/色相）实现同款调节。

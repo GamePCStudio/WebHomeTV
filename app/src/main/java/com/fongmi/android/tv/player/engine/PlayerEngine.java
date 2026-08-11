@@ -84,6 +84,17 @@ public interface PlayerEngine {
     default void clearVideoProfile() {
     }
 
+    default boolean applyAudioSetting() {
+        return false;
+    }
+
+    default void clearAudioEffect() {
+    }
+
+    default boolean supportsAudioSetting() {
+        return false;
+    }
+
     default boolean supportsNativeLut() {
         return false;
     }

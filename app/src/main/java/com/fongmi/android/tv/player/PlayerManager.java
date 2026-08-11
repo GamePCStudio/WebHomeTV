@@ -91,6 +91,7 @@ public class PlayerManager implements ParseCallback {
         App.removeCallbacks(networkProtectionRunnable);
         if (player != null) player.removeListener(listener);
         clearVideoEffect();
+        clearAudioEffect();
         if (engine != null) engine.release();
         engine = null;
         player = null;
@@ -265,6 +266,18 @@ public class PlayerManager implements ParseCallback {
 
     public void clearVideoEffect() {
         engine.clearVideoProfile();
+    }
+
+    public void applyAudioSetting() {
+        if (engine != null) engine.applyAudioSetting();
+    }
+
+    public void clearAudioEffect() {
+        if (engine != null) engine.clearAudioEffect();
+    }
+
+    public boolean canSetAudioSetting() {
+        return engine != null && engine.supportsAudioSetting();
     }
 
     public void togglePlayer() {

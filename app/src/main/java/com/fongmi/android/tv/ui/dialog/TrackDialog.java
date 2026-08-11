@@ -77,7 +77,7 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
     }
 
     private boolean hasSetting() {
-        return type == C.TRACK_TYPE_VIDEO;
+        return type == C.TRACK_TYPE_VIDEO || type == C.TRACK_TYPE_AUDIO;
     }
 
     private boolean hasText() {
@@ -119,7 +119,8 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
     }
 
     private void onSetting(View view) {
-        VideoSettingDialog.create().player(player).show(requireActivity());
+        if (type == C.TRACK_TYPE_AUDIO) AudioSettingDialog.create().player(player).show(requireActivity());
+        else VideoSettingDialog.create().player(player).show(requireActivity());
         dismiss();
     }
 

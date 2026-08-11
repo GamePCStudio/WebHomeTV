@@ -114,6 +114,24 @@
     <string name="video_effect_shadow">Shadow</string>
     <string name="video_effect_reset">Reset</string>
     <string name="error_video_effect_unsupported">Video effect is not supported by the current player</string>
+    <string name="audio_setting">Audio effect</string>
+    <string name="error_audio_effect_unsupported">Audio effect requires Android 9+ with EXO player</string>
+    <string-array name="audio_preset_names">
+        <item>Off</item>
+        <item>Natural</item>
+        <item>Vocal</item>
+        <item>Cinema</item>
+        <item>Bass</item>
+        <item>Treble</item>
+        <item>Pop</item>
+        <item>Rock</item>
+        <item>Dance</item>
+        <item>Electronic</item>
+        <item>Hip-Hop</item>
+        <item>Jazz</item>
+        <item>Classical</item>
+        <item>Custom</item>
+    </string-array>
     <string name="danmaku_show_special">Special type</string>
     <string name="danmaku_section_appearance">Appearance</string>
     <string name="danmaku_section_display">Display</string>
