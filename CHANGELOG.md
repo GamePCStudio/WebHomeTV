@@ -1,5 +1,26 @@
 # Changelog
 
+## 5.5.69 — 软件 DSP 音频效果通路（EXO，API 24+） (2026-08-11)
+
+从 TV-fongmi 移植软件 DSP 音频管线，补齐此前「仅硬件均衡器」缺口：不仅 API 28+ 的硬件 `DynamicsProcessing` 均衡器，现还支持 API 24–27 的软件均衡器，以及响度归一、动态稳定、前级/Boost 增益与软限幅等 DSP 处理。
+
+### 新增
+
+- **软件 DSP 管线**（纯 Media3 `BaseAudioProcessor`，无外部依赖）：`AudioEffectProcessor` / `AudioSoftwareEqualizer`（10 频段 IIR 均衡）/ `AudioLimiter` / `AudioLoudnessNormalizer` / `AudioStabilizer`
+- `ExoAudioEffectController`：统一调度硬件（API 28+ 均衡器）与软件（API<28 均衡器 + DSP）两条通路
+- `AudioEffectProcessor` 内实现声道混合（立体声/单声道/反相，ITU-R BS.775 下混），替代 TV-fongmi 依赖的 mpvplayer 扩展 `AudioChannelMix`
+
+### 修改
+
+- `ExoUtil.buildPlayer` / `buildRenderersFactory` 支持注入 `AudioProcessor`：通过覆写 `NextRenderersFactory.buildAudioSink`，把 `AudioEffectProcessor` 挂进 `DefaultAudioSink` 音频链
+- `ExoPlayerEngine` 改用 `ExoAudioEffectController`，把软件 processor 注入音频渲染器；`applyAudioSetting()` / `clearAudioEffect()` / `rebuild()` 同步更新
+
+### 说明
+
+- 音频效果默认关闭，仅用户启用时生效；软件通路主要服务于 API<28 或需要响度/稳定等 DSP 的低版本设备
+- 声道混合为内部实现（与 TV-fongmi 的 mpvplayer 扩展算法等效），未引入额外依赖
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.68 — 直播 Python 源 m3u8 兼容代理 (2026-08-11)
 
 从 webhtv-main 移植 `server/process/M3u8`：为 Python 直播源发出的 `127.0.0.1:9978/m3u8?url=` 链接提供本地代理转发，补全 UA/Referer/Origin 头，并重写播放列表内的分片地址回到本代理，保证直播可正常播放。

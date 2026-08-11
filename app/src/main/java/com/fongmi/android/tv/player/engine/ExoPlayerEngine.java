@@ -14,7 +14,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Track;
 import com.fongmi.android.tv.player.effect.audio.AudioEffectBands;
 import com.fongmi.android.tv.player.effect.audio.AudioEffectConfig;
-import com.fongmi.android.tv.player.effect.audio.AudioEqualizerController;
+import com.fongmi.android.tv.player.effect.audio.ExoAudioEffectController;
 import com.fongmi.android.tv.player.effect.video.ExoVideoEffectController;
 import com.fongmi.android.tv.player.effect.video.VideoEffectProfile;
 import com.fongmi.android.tv.player.exo.ErrorMsgProvider;
@@ -30,16 +30,16 @@ public class ExoPlayerEngine implements PlayerEngine {
 
     private final ErrorMsgProvider provider;
     private final ExoVideoEffectController videoEffectController;
-    private final AudioEqualizerController audioEqualizerController;
+    private final ExoAudioEffectController audioEffectController;
     private PlaySpec spec;
     private Player player;
     private int decode;
 
     public ExoPlayerEngine(int decode, Player.Listener listener) {
-        this.player = ExoUtil.buildPlayer(decode, listener);
+        this.audioEffectController = new ExoAudioEffectController();
+        this.player = ExoUtil.buildPlayer(decode, listener, audioEffectController.getProcessor());
         this.provider = new ErrorMsgProvider();
         this.videoEffectController = new ExoVideoEffectController();
-        this.audioEqualizerController = new AudioEqualizerController();
         this.decode = decode;
     }
 
@@ -57,7 +57,7 @@ public class ExoPlayerEngine implements PlayerEngine {
     public Player rebuild(Player.Listener listener) {
         player.release();
         SpiderDebug.log("player-engine", "rebuild decode=%d", decode);
-        return player = ExoUtil.buildPlayer(decode, listener);
+        return player = ExoUtil.buildPlayer(decode, listener, audioEffectController.getProcessor());
     }
 
     @Override
@@ -110,12 +110,12 @@ public class ExoPlayerEngine implements PlayerEngine {
         if (!(player instanceof ExoPlayer exo)) return false;
         int channelCount = exo.getAudioFormat() == null ? 2 : Math.max(1, exo.getAudioFormat().channelCount);
         AudioEffectConfig config = AudioEffectConfig.from(AudioEffectBands.STANDARD, channelCount);
-        return audioEqualizerController.apply(exo, config);
+        return audioEffectController.apply(exo, config);
     }
 
     @Override
     public void clearAudioEffect() {
-        audioEqualizerController.release();
+        audioEffectController.release();
     }
 
     @Override
