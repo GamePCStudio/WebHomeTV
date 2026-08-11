@@ -98,6 +98,19 @@ jobs:
           find app/build/outputs/apk -name "*.apk" -type f -exec cp -v {} dist/ \;
           ls -la dist/
 
+      - name: Check APK sizes (CNB raw limit is 100 MiB)
+        run: |
+          LIMIT=$((100 * 1024 * 1024))
+          for apk in dist/*.apk; do
+            size=$(stat -c %s "$apk")
+            miB=$((size / 1024 / 1024))
+            if [ "$size" -gt "$LIMIT" ]; then
+              echo "::warning::$(basename "$apk") is ${miB} MiB — exceeds CNB raw 100 MiB limit"
+            else
+              echo "OK $(basename "$apk") ${miB} MiB"
+            fi
+          done
+
       - name: Generate update JSON manifests
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
@@ -186,16 +199,22 @@ jobs:
             echo "- CNB APK mirror: clone failed" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          mkdir -p cnb-mirror/apk
-          cp dist/*.apk dist/*.json cnb-mirror/apk/
           cd cnb-mirror
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apk/
+          # Store APKs via LFS so the git history does not bloat (was ~10 GiB).
+          git lfs install --local >/dev/null 2>&1 || true
+          git lfs track "apk/*.apk" >/dev/null 2>&1 || true
+          mkdir -p apk
+          # Keep only this release's files; drop stale APKs from previous releases.
+          rm -f apk/*.apk
+          cp ../dist/*.apk apk/
+          cp ../dist/*.json apk/
+          git add .gitattributes apk/
           git diff --cached --quiet && { echo "- CNB APK mirror: no changes" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
           git commit -m "${{ github.ref_name }}"
           if git push origin HEAD:main 2>&1; then
-            echo "- CNB APK mirror: synced" >> "$GITHUB_STEP_SUMMARY"
+            echo "- CNB APK mirror: synced (LFS)" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- CNB APK mirror: push failed" >> "$GITHUB_STEP_SUMMARY"
           fi
