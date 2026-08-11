@@ -78,7 +78,7 @@ public class ExoPlayerEngine implements PlayerEngine {
 
     @Override
     public boolean supportsVideoEffects() {
-        return player instanceof ExoPlayer exo && exo.getVideoEffectsSupport() == ExoPlayer.VIDEO_EFFECTS_SUPPORTED;
+        return player instanceof ExoPlayer;
     }
 
     @Override

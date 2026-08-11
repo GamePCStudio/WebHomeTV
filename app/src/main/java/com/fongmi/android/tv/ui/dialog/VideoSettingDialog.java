@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
@@ -38,6 +39,10 @@ public final class VideoSettingDialog extends BaseBottomSheetDialog {
     public VideoSettingDialog player(PlayerManager player) {
         this.player = player;
         return this;
+    }
+
+    public void show(FragmentActivity activity) {
+        show(activity.getSupportFragmentManager(), null);
     }
 
     @Override
