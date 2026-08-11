@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.72 — 当前播放记录只读 API（构建修复） (2026-08-11)
+
+修复 v5.5.71 的编译错误：`PlaybackRuntime` 由包私有改为 `public`，并公开 `setPlayer`/`updateHistory`，供 `VideoActivity`（其他包）接线。
+
 ## 5.5.71 — 当前播放记录只读 API（/api/playback/current） (2026-08-11)
 
 从 webhtv-main 移植播放记录同步能力的**第一步**：新增只读的"当前播放"上报端点，供爬虫/外部工具查询本机正在播放的片源。
