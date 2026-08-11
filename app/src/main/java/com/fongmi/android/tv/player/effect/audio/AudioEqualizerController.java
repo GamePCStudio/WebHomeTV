@@ -20,13 +20,13 @@ public final class AudioEqualizerController {
 
     private DynamicsController dynamics;
 
-    boolean apply(ExoPlayer player, AudioEffectConfig config) {
+    public boolean apply(ExoPlayer player, AudioEffectConfig config) {
         boolean success = Build.VERSION.SDK_INT >= 28 && applyDynamics(player, config, getChannelCount(player));
         if (!success) releaseDynamics();
         return success;
     }
 
-    void release() {
+    public void release() {
         releaseDynamics();
     }
 
