@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.68 — 直播 Python 源 m3u8 兼容代理 (2026-08-11)
+
+从 webhtv-main 移植 `server/process/M3u8`：为 Python 直播源发出的 `127.0.0.1:9978/m3u8?url=` 链接提供本地代理转发，补全 UA/Referer/Origin 头，并重写播放列表内的分片地址回到本代理，保证直播可正常播放。
+
+### 新增
+
+- `server/process/M3u8`：独立 `Process` 实现，命中 `/m3u8` 时转发上游，区分播放列表与分片流
+  - 播放列表：重写 `.m3u8` 内分片/`#EXT-X-KEY`URI 为本代理地址，禁缓存
+  - 分片流：透传 Range/Content-Range，支持 HEAD 与断点续传
+- `server/Nano` 注册 `process.add(new M3u8())`
+
+### 安全/兼容
+
+- 仅接受 `http(s)` 目标，转发异常捕获返回 500，不向外暴露内部请求
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.67 — 播放健壮性加固（Issue #7 闪退修复） (2026-08-11)
 
 针对 Android 17（Pixel 7 Pro，手机版）闪退反馈，加固播放/换源路径的异常防护，避免 Spider/解析或引擎重建抛出的异常直接导致应用崩溃（借鉴 webhtv 的 try/catch(Throwable) 防崩思路）。
