@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.5.80 — 镜像同步回滚 LFS（修复 CNB 下载） (2026-08-11)
+
+v5.5.79 引入的 **git-lfs** 镜像同步，导致 CNB raw 对 `*.apk` 返回 **134 字节的 LFS 指针**而非 APK 本体，反而破坏了 App 内更新下载。回滚为 **git blob** 存储（CNB raw 才能服务真实文件），并保留"只留最新 APK"以控制镜像体积。
+
+### 修改
+
+- CI 镜像同步：移除 `git lfs track`，并清理残留 `.gitattributes` 的 LFS 行；APK 作为 git blob 推送
+- 仍保留 `resConfigs`（arm64/armv7 APK 已 <100 MiB）与"只保留最新版本 APK"
+
+### 说明
+
+- arm64/armv7 APK **99/86 MiB**（<100 MiB），CNB raw 可正常下载；universal（双 ABI）仍 102-103 MiB 略超限
+- 镜像历史此前已累积 ~10 GiB，需在 CNB 仓库手动清理（本版起不再因 LFS 指针占用额外空间）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.79 — 更新修复：APK 压缩至 CNB 100 MiB 限制内 (2026-08-11)
 
 CNB 镜像的 raw 文件端点有 **100 MiB 硬限制**，此前 APK（100-105 MiB）通过 CNB 更新时报 `raw 文件大小 100 MiB 超过限制`。

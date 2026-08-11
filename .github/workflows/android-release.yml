@@ -202,9 +202,10 @@ jobs:
           cd cnb-mirror
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Store APKs via LFS so the git history does not bloat (was ~10 GiB).
-          git lfs install --local >/dev/null 2>&1 || true
-          git lfs track "apk/*.apk" >/dev/null 2>&1 || true
+          # APKs must be git blobs so CNB raw serves the real file. CNB raw
+          # returns a 134-byte LFS pointer for LFS-tracked files, which would
+          # break the in-app download. Drop any leftover LFS tracking.
+          sed -i '/apk\/\*\.apk/d' .gitattributes 2>/dev/null || true
           mkdir -p apk
           # Keep only this release's files; drop stale APKs from previous releases.
           rm -f apk/*.apk
@@ -214,7 +215,7 @@ jobs:
           git diff --cached --quiet && { echo "- CNB APK mirror: no changes" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
           git commit -m "${{ github.ref_name }}"
           if git push origin HEAD:main 2>&1; then
-            echo "- CNB APK mirror: synced (LFS)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- CNB APK mirror: synced" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- CNB APK mirror: push failed" >> "$GITHUB_STEP_SUMMARY"
           fi
