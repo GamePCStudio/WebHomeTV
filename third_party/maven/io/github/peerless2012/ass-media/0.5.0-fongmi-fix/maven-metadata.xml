@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>io.github.peerless2012</groupId>
+  <artifactId>ass-media</artifactId>
+  <versioning>
+    <latest>$VER</latest>
+    <release>$VER</release>
+    <versions>
+      <version>$VER</version>
+    </versions>
+    <lastUpdated>20260812000000</lastUpdated>
+  </versioning>
+</metadata>
