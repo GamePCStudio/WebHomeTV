@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.peerless2012</groupId>
   <artifactId>ass-media</artifactId>
-  <version>$VER</version>
+  <version>0.5.0-fongmi-fix</version>
   <packaging>aar</packaging>
   <name>ass-media</name>
   <description>A Androidx media extension for libass.</description>

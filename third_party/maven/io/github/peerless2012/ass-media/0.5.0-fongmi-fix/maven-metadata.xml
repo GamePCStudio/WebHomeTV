@@ -3,10 +3,10 @@
   <groupId>io.github.peerless2012</groupId>
   <artifactId>ass-media</artifactId>
   <versioning>
-    <latest>$VER</latest>
-    <release>$VER</release>
+    <latest>0.5.0-fongmi-fix</latest>
+    <release>0.5.0-fongmi-fix</release>
     <versions>
-      <version>$VER</version>
+      <version>0.5.0-fongmi-fix</version>
     </versions>
     <lastUpdated>20260812000000</lastUpdated>
   </versioning>
