@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.73 — 当前播放记录只读 API（构建修复 2） (2026-08-11)
+
+修复编译错误：恢复 `PlaybackRuntime.playerFor` 方法（此前编辑误删），`PlaybackRuntime` 保持 public 供 `VideoActivity` 接线。
+
 ## 5.5.72 — 当前播放记录只读 API（构建修复） (2026-08-11)
 
 修复 v5.5.71 的编译错误：`PlaybackRuntime` 由包私有改为 `public`，并公开 `setPlayer`/`updateHistory`，供 `VideoActivity`（其他包）接线。

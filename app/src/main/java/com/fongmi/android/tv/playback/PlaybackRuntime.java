@@ -24,6 +24,13 @@ public final class PlaybackRuntime {
         currentPlayer = new WeakReference<>(player);
     }
 
+    static PlayerManager playerFor(String historyKey) {
+        PlayerManager player = currentPlayer.get();
+        if (player == null || player.isReleased()) return null;
+        String key = player.getKey();
+        return TextUtils.isEmpty(historyKey) || TextUtils.equals(key, historyKey) ? player : null;
+    }
+
     public static void updateHistory(@Nullable History history) {
         currentHistory = history == null ? null : history.copy();
     }
