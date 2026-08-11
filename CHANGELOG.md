@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.5.81 — 更新下载回退：universal APK 超 CNB 限制时走 GitHub (2026-08-11)
+
+universal APK（含 arm64+armv7 双 ABI 原生库）无法安全压到 CNB raw 的 100 MiB 限制内（lxml 为蜘蛛体系必需，不可裁剪）。改为**更新下载时自动探测**：CNB 对 APK 返回 4xx（413 超限）时回退到 GitHub Releases 下载。
+
+### 修改
+
+- `Updater.onConfirm`：对 CNB 的 APK URL 做 HEAD 探测，不可达（413/网络失败）时改用 GitHub Releases URL
+- arm64/armv7（<100 MiB，CNB 可服务）仍走 CNB 快源；universal（超限）自动回退 GitHub
+
+### 说明
+
+- 探测在后台线程执行，5s 超时，不影响主线程
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.80 — 镜像同步回滚 LFS（修复 CNB 下载） (2026-08-11)
 
 v5.5.79 引入的 **git-lfs** 镜像同步，导致 CNB raw 对 `*.apk` 返回 **134 字节的 LFS 指针**而非 APK 本体，反而破坏了 App 内更新下载。回滚为 **git blob** 存储（CNB raw 才能服务真实文件），并保留"只留最新 APK"以控制镜像体积。

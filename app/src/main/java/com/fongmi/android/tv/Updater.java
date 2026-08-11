@@ -83,9 +83,10 @@ public class Updater implements UpdateListener {
 
     @Override
     public void onConfirm(View view) {
-        String apkName = BuildConfig.FLAVOR_mode + "-" + BuildConfig.FLAVOR_abi + ".apk";
-        String url = Github.getApk(BuildConfig.FLAVOR_mode + "-" + BuildConfig.FLAVOR_abi);
-        copyAndOpen(url);
+        String flavor = BuildConfig.FLAVOR_mode + "-" + BuildConfig.FLAVOR_abi;
+        String primary = Github.getApk(flavor);
+        String fallback = GITHUB_RELEASE + "/" + flavor + ".apk";
+        Task.execute(() -> copyAndOpen(primary, fallback));
         dismiss();
     }
 
@@ -95,7 +96,10 @@ public class Updater implements UpdateListener {
         dismiss();
     }
 
-    private void copyAndOpen(String url) {
+    private void copyAndOpen(String primary, String fallback) {
+        // CNB raw refuses files >100 MiB (HTTP 413). If the primary mirror is
+        // CNB and the APK is unavailable there, fall back to GitHub releases.
+        String url = isCnb(primary) && !reachable(primary) ? fallback : primary;
         try {
             ClipboardManager cm = (ClipboardManager) App.get().getSystemService(Context.CLIPBOARD_SERVICE);
             cm.setPrimaryClip(ClipData.newPlainText("update", url));
@@ -107,6 +111,21 @@ public class Updater implements UpdateListener {
             App.get().startActivity(intent);
         } catch (Exception e) {
             Notify.show(ResUtil.getString(R.string.update_failed));
+        }
+    }
+
+    private static boolean isCnb(String url) {
+        return url != null && url.contains("cnb.cool");
+    }
+
+    private static boolean reachable(String url) {
+        try {
+            okhttp3.Request request = new okhttp3.Request.Builder().url(url).head().build();
+            try (okhttp3.Response response = OkHttp.client(5000).newCall(request).execute()) {
+                return response.isSuccessful();
+            }
+        } catch (Exception e) {
+            return false;
         }
     }
 
