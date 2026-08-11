@@ -101,6 +101,8 @@
     <string name="danmaku_show_reverse">Reverse scroll</string>
     <string name="danmaku_show_positioned">Positioned</string>
     <string name="danmaku_show_subtitle">Subtitle type</string>
+    <string name="subtitle_search_api_title">Assrt</string>
+    <string name="subtitle_search_token_hint">Token</string>
     <string name="danmaku_show_special">Special type</string>
     <string name="danmaku_section_appearance">Appearance</string>
     <string name="danmaku_section_display">Display</string>

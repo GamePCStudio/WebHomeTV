@@ -1,5 +1,29 @@
 # Changelog
 
+## 5.5.63 — 在线字幕搜索 (2026-08-11)
+
+从 TV-fongmi 移植 Assrt 在线字幕搜索能力：轨道面板新增「搜索」入口，可在线搜索、下载并套用外部字幕。
+
+### 新增
+
+- **在线字幕搜索**: 轨道弹窗新增搜索按钮（仅点播字幕轨显示），基于 Assrt API 搜索外部字幕
+- 支持关键词搜索 / 分页 / 详情解析 / ZIP 字幕包下载解压后选择套用
+- 新增 `SubtitleApi` / `SubtitleSearchDialog` / `SubtitleApiDialog`（Token 配置）/ `SubtitleAdapter` 等；`SubtitleSearchItem.toSub()` 复用既有 `Sub` / `PlayerManager.setSub` 套用流程
+- 新增 `SubtitleSetting`（Assrt Token 持久化），经搜索弹窗的设置齿轮进入 Token 配置
+- 安全底线：下载与解压均带字节/条目上限（32MB 下载、256 条目/128MB 解压）与路径穿越防护
+
+### 修改
+
+- `Sub` 新增 4 参构造 `from(name,url,lang,format)`
+- `Download` 新增 `maxBytes` 上限；`FileUtil` 新增带限制与穿越防护的 4 参 `zipDecompress`
+- `BaseBottomSheetDialog` 新增预测性返回（back dispatcher）支持
+
+### 说明
+
+- 仅移植在线搜索，不含 TV-fongmi 的字幕外观/样式调整（webtv 已有 `SubtitleDialog`）
+- Assrt Token 需用户自行填写（`VodConfig.getAssrt` 配置字段未引入）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.62 — EXO 自适应降速 + WebView 闪退修复 (2026-08-11)
 
 修复安卓 17 / Pixel 7 Pro 手机版闪退（issue #7），并从上游 WebHomeTV 移植 EXO 自适应降速网络保护（最小可验证集）。
