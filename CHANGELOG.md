@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.75 — 播放进度写入 API（/api/playback/progress） (2026-08-11)
+
+从 webhtv-main 移植播放记录同步的**第三步**：新增本机播放进度写入 API，外部工具/爬虫可将播放进度写入本地历史。
+
+### 新增
+
+- `playback/`：`PlaybackProgressInput`（进度写入请求，含多别名解析/校验）、`PlaybackProgressApplyResult`、`PlaybackProgressBatchResult`、`PlaybackProgressWriter`（本地写入核心：匹配本地历史/按需新建/写盘）
+- `server/process/PlaybackProgressApi`：`POST /api/playback/progress`（单条）与 `/api/playback/progress/batch`（批量），含 CORS
+- `HistoryDao` 补充 `findByKeyPrefix(cid, prefix)` 查询
+
+### 修改
+
+- `server/Nano` 注册写入端点
+
+### 说明
+
+- 受 `ViewingRecordSyncStore` 总开关 + 本机 API 修改开关 + 隐身模式三重保护
+- 仅本地写入；删除/远端同步/墓碑因依赖额外存储与更复杂对账，暂未移植
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.74 — 播放记录 Webhook 上报 (2026-08-11)
 
 从 webhtv-main 移植播放记录同步的**第二步**：新增 Webhook 上报能力，播放开始/进度/暂停/恢复/结束/停止时向配置的 Webhook URL 推送播放记录。
