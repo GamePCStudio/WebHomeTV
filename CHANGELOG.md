@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.83 — 镜像历史重建：CNB 仓库不再膨胀 (2026-08-11)
+
+根治 CNB APK 镜像仓库此前累积到 ~10 GiB 的问题：每次发布改为**孤儿分支重建历史**（只含最新 APK/JSON）并 **force-push** 到 main，历史从 ~600 MB 重新开始，不再随发布单调增长。
+
+### 修改
+
+- CI "Sync to mirror"：`git checkout --orphan` 重建 + `git push --force`，仅保留最新 6 个 APK + JSON
+- APK 仍以 git blob 存储（CNB raw 才能服务真实文件）；LFS 已被证明会返回指针、破坏下载，不采用
+- 防呆：dist 无 APK 时跳过重建，避免清空镜像
+
+### 说明
+
+- force-push 失败时自动保持旧历史（`continue-on-error`，不影响发布）
+- 首次生效后，镜像 main 分支历史即重置为最新发布的内容；CNB 侧旧对象由其 GC 回收
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.82 — 播放记录远端同步（Step4b，最后一块） (2026-08-11)
 
 移植 webhtv 播放记录同步的最后一块：**远端同步引擎**，从自建中转服务拉取/合并播放记录与删除事件，支持增量游标与站点过滤。

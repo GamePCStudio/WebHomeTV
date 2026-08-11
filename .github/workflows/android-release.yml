@@ -202,22 +202,26 @@ jobs:
           cd cnb-mirror
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # APKs must be git blobs so CNB raw serves the real file. CNB raw
-          # returns a 134-byte LFS pointer for LFS-tracked files, which would
-          # break the in-app download. Drop any leftover LFS tracking.
-          sed -i '/apk\/\*\.apk/d' .gitattributes 2>/dev/null || true
+          # Rebuild the mirror history from scratch on every release: an orphan
+          # branch containing only the latest APKs/JSONs keeps the repo small.
+          # Appending APKs to git history previously grew the mirror to ~10 GiB.
+          # APKs must be git blobs (CNB raw returns a 134-byte LFS pointer for
+          # LFS-tracked files, which would break the in-app download).
+          git checkout --orphan apk-main
+          git rm -rf --cached -q . 2>/dev/null || true
+          rm -rf apk .gitattributes
           mkdir -p apk
-          # Keep only this release's files; drop stale APKs from previous releases.
-          rm -f apk/*.apk
-          cp ../dist/*.apk apk/
-          cp ../dist/*.json apk/
-          git add .gitattributes apk/
-          git diff --cached --quiet && { echo "- CNB APK mirror: no changes" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          if ! cp ../dist/*.apk apk/ 2>/dev/null; then
+            echo "- CNB APK mirror: no APK files, skipped" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          cp ../dist/*.json apk/ 2>/dev/null || true
+          git add apk/
           git commit -m "${{ github.ref_name }}"
-          if git push origin HEAD:main 2>&1; then
-            echo "- CNB APK mirror: synced" >> "$GITHUB_STEP_SUMMARY"
+          if git push --force origin apk-main:main 2>&1; then
+            echo "- CNB APK mirror: history rebuilt (latest only)" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "- CNB APK mirror: push failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "- CNB APK mirror: force push failed (kept previous history)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Sync TV source
