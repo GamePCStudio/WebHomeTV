@@ -301,8 +301,12 @@ public class PlayerManager implements ParseCallback {
         setSpeed(speed);
         callback.onPlayerRebuild(player);
         if (spec != null && spec.getUrl() != null) {
-            setMediaItem();
-            if (position > 0) seekTo(position);
+            try {
+                setMediaItem();
+                if (position > 0) seekTo(position);
+            } catch (Throwable t) {
+                SpiderDebug.log(t);
+            }
         }
     }
 

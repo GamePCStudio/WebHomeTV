@@ -561,8 +561,15 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.widget.title.setText(getString(R.string.detail_title, mBinding.name.getText(), episode.getName()));
         playerStartTime = System.currentTimeMillis();
         beginPlayHealth();
-        SpiderDebug.log("video-flow", "player start key=%s flag=%s episode=%s url=%s", getKey(), flag.getFlag(), episode.getName(), episode.getUrl());
-        mViewModel.playerContent(getKey(), flag.getFlag(), episode.getUrl());
+        try {
+            SpiderDebug.log("video-flow", "player start key=%s flag=%s episode=%s url=%s", getKey(), flag.getFlag(), episode.getName(), episode.getUrl());
+            mViewModel.playerContent(getKey(), flag.getFlag(), episode.getUrl());
+        } catch (Throwable t) {
+            SpiderDebug.log(t);
+            String msg = t.getMessage();
+            onError(msg != null ? msg : t.getClass().getSimpleName());
+            return;
+        }
         mBinding.widget.title.setSelected(true);
         updateHistory(episode);
         showProgress();
@@ -1004,15 +1011,23 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     private boolean onPlayerKernel() {
         mClock.setCallback(null);
-        player().togglePlayer();
-        setDecode();
+        try {
+            player().togglePlayer();
+            setDecode();
+        } catch (Throwable t) {
+            SpiderDebug.log(t);
+        }
         return true;
     }
 
     private void onDecode() {
         mClock.setCallback(null);
-        player().toggleDecode();
-        setDecode();
+        try {
+            player().toggleDecode();
+            setDecode();
+        } catch (Throwable t) {
+            SpiderDebug.log(t);
+        }
     }
 
     private void onTrack(View view) {

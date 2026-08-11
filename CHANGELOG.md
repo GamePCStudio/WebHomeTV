@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.67 — 播放健壮性加固（Issue #7 闪退修复） (2026-08-11)
+
+针对 Android 17（Pixel 7 Pro，手机版）闪退反馈，加固播放/换源路径的异常防护，避免 Spider/解析或引擎重建抛出的异常直接导致应用崩溃（借鉴 webhtv 的 try/catch(Throwable) 防崩思路）。
+
+### 修改
+
+- `VideoActivity`（mobile 与 leanback）`getPlayer()`：`mViewModel.playerContent(...)` 包裹 `try/catch(Throwable)`，Spider/解析异常不再崩溃，转为走既有错误提示流程（`onError`）
+- `VideoActivity`（mobile 与 leanback）`onPlayerKernel()` / `onDecode()`：切换内核/编码时包裹 `try/catch(Throwable)`，引擎重建失败不闪退
+- `PlayerManager.switchPlayer()`：重建后 `setMediaItem()` / `seekTo()` 包裹 `try/catch(Throwable)`，媒介装载异常不闪退
+
+### 说明
+
+- 崩溃仅凭 issue 描述（无 logcat 堆栈）无法唯一归因，本版先做整体健壮性加固；若仍复现，需补充崩溃日志定位视频 GL 特效或音频均衡器路径
+- 软件 DSP 音频管线（TV-fongmi 完整版）因依赖 `AudioChannelMix` 且 webtv 的 mpvplayer 为精简 shim，暂缓移植
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.66 — 音频效果（EXO 均衡器，API 28+） (2026-08-11)
 
 从 TV-fongmi 移植音频均衡器（首期，EXO 优先）：轨道弹窗新增「设置」入口（音频轨显示），可切换音效预设与开/关。
