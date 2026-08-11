@@ -72,6 +72,10 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
         backCallback.setEnabled(enabled);
     }
 
+    protected int getMaxHeight() {
+        return 0;
+    }
+
     private void setupBackDispatcher() {
         if (requireDialog() instanceof ComponentDialog dialog) dialog.getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), backCallback);
     }
@@ -90,6 +94,12 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
         FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (sheet == null) return;
         if (transparent()) sheet.setBackgroundColor(ResUtil.getColor(R.color.transparent));
+        int maxHeight = getMaxHeight();
+        if (maxHeight > 0) {
+            ViewGroup.LayoutParams params = sheet.getLayoutParams();
+            params.height = maxHeight;
+            sheet.setLayoutParams(params);
+        }
         BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(sheet);
         behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         behavior.setSkipCollapsed(true);

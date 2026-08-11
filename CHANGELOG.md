@@ -1,5 +1,28 @@
 # Changelog
 
+## 5.5.64 — 视频色彩调节 (2026-08-11)
+
+从 TV-fongmi 移植视频色彩调节能力（EXO 内核）：轨道弹窗新增「设置」入口，可调整饱和度/对比度/亮度/伽马/色相/色温/锐度/阴影。
+
+### 新增
+
+- **视频色彩调节**: 轨道弹窗新增设置按钮（视频轨显示），基于 Media3 `GlEffect`/`BaseGlShaderProgram` 实现
+- 移植自包含效果引擎：`VideoEffectProfile` / `VideoEffectPreset` / `ColorToneAdjustEffect` / `DetailAdjustEffect` 及各自 shader program / `ExoVideoEffectController`
+- 新增 `VideoSetting` 偏好与 `VideoSettingDialog`（启用开关 + 8 项滑杆调节 + 重置）；`view_setting_slider` 滑杆行
+- 仅 EXO 内核启用（`ExoPlayer.getVideoEffectsSupport()` 校验），MPV 优雅降级为「不支持」提示
+
+### 修改
+
+- `ExoPlayerEngine` 重写 `supportsVideoEffects()` / `setVideoEffects()`
+- `PlayerManager` 新增 `canSetVideoSetting()` / `refreshVideoSetting()` / `clearVideoEffect()`
+- `BaseBottomSheetDialog` 新增 `getMaxHeight()` 高度上限支持
+- 顺带移植 `SliderUtil`（滑杆吸附工具）
+
+### 说明
+
+- 本次为 EXO-first 精简版：未含 TV-fongmi 的完整预设系统（自然/鲜艳等 12 档 chips）与对比预览、未实现 MPV 端均衡器/shader（webtv 内嵌 MpvPlayer 缺 `MpvVideoEqualizer` API，待后续）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.63 — 在线字幕搜索 (2026-08-11)
 
 从 TV-fongmi 移植 Assrt 在线字幕搜索能力：轨道面板新增「搜索」入口，可在线搜索、下载并套用外部字幕。

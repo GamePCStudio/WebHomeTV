@@ -76,6 +76,10 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
         return type == C.TRACK_TYPE_TEXT && player.isVod();
     }
 
+    private boolean hasSetting() {
+        return type == C.TRACK_TYPE_VIDEO;
+    }
+
     private boolean hasText() {
         return type == C.TRACK_TYPE_TEXT && player.haveTrack(type);
     }
@@ -101,6 +105,7 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
         binding.offset.setVisibility(hasText() || hasAudio() ? View.VISIBLE : View.GONE);
         binding.choose.setVisibility(hasChoose() ? View.VISIBLE : View.GONE);
         binding.search.setVisibility(hasSearch() ? View.VISIBLE : View.GONE);
+        binding.setting.setVisibility(hasSetting() ? View.VISIBLE : View.GONE);
         binding.subtitle.setVisibility(hasText() ? View.VISIBLE : View.GONE);
     }
 
@@ -109,7 +114,13 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
         binding.offset.setOnClickListener(this::onOffset);
         binding.choose.setOnClickListener(this::onChoose);
         binding.search.setOnClickListener(this::onSearch);
+        binding.setting.setOnClickListener(this::onSetting);
         binding.subtitle.setOnClickListener(this::onSubtitle);
+    }
+
+    private void onSetting(View view) {
+        VideoSettingDialog.create().player(player).show(requireActivity());
+        dismiss();
     }
 
     private void onSearch(View view) {

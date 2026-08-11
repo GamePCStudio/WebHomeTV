@@ -12,6 +12,7 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.VideoSize;
+import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.danmaku.DanmakuConfig;
 import androidx.media3.ui.danmaku.DanmakuController;
 
@@ -32,9 +33,11 @@ import com.fongmi.android.tv.player.exo.ExoNetworkGuardBufferPolicy;
 import com.fongmi.android.tv.player.exo.ExoNetworkGuardController;
 import com.fongmi.android.tv.player.exo.ExoNetworkGuardEligibility;
 import com.fongmi.android.tv.player.exo.ForwardBufferTrend;
+import com.fongmi.android.tv.player.effect.video.ExoVideoEffectController;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.ExoPerformanceSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
+import com.fongmi.android.tv.setting.VideoSetting;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -75,6 +78,8 @@ public class PlayerManager implements ParseCallback {
     private long networkProtectionMediaBitrate;
     private int networkProtectionRebufferCount;
 
+    private final ExoVideoEffectController videoEffectController = new ExoVideoEffectController();
+
     public PlayerManager(Callback callback) {
         this.runnable = () -> callback.onError(ResUtil.getString(R.string.error_play_timeout));
         this.playerType = PlayerSetting.getPlayer();
@@ -89,6 +94,7 @@ public class PlayerManager implements ParseCallback {
         App.removeCallbacks(runnable);
         App.removeCallbacks(networkProtectionRunnable);
         if (player != null) player.removeListener(listener);
+        clearVideoEffect();
         if (engine != null) engine.release();
         engine = null;
         player = null;
@@ -250,6 +256,19 @@ public class PlayerManager implements ParseCallback {
         String[] names = ResUtil.getStringArray(R.array.select_player_kernel);
         int index = Math.min(Math.max(playerType, 0), names.length - 1);
         return names[index];
+    }
+
+    public boolean canSetVideoSetting() {
+        return playerType == PlayerSetting.EXO && engine.supportsVideoEffects();
+    }
+
+    public void refreshVideoSetting() {
+        if (!canSetVideoSetting()) return;
+        videoEffectController.apply((ExoPlayer) engine.getPlayer(), VideoSetting.getAppliedProfile());
+    }
+
+    public void clearVideoEffect() {
+        if (engine != null && engine.getPlayer() instanceof ExoPlayer exo) videoEffectController.clear(exo);
     }
 
     public void togglePlayer() {

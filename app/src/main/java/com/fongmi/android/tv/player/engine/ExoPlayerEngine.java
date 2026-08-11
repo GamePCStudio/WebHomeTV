@@ -1,12 +1,14 @@
 package com.fongmi.android.tv.player.engine;
 
 import androidx.media3.common.C;
+import androidx.media3.common.Effect;
 import androidx.media3.common.MediaEdition;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
+import androidx.media3.exoplayer.ExoPlayer;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Track;
@@ -72,6 +74,16 @@ public class ExoPlayerEngine implements PlayerEngine {
     @Override
     public boolean isHard() {
         return decode == HARD;
+    }
+
+    @Override
+    public boolean supportsVideoEffects() {
+        return player instanceof ExoPlayer exo && exo.getVideoEffectsSupport() == ExoPlayer.VIDEO_EFFECTS_SUPPORTED;
+    }
+
+    @Override
+    public void setVideoEffects(List<Effect> effects) {
+        if (player instanceof ExoPlayer exo) exo.setVideoEffects(effects);
     }
 
     @Override

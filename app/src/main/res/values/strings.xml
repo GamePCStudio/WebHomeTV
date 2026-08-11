@@ -103,6 +103,17 @@
     <string name="danmaku_show_subtitle">Subtitle type</string>
     <string name="subtitle_search_api_title">Assrt</string>
     <string name="subtitle_search_token_hint">Token</string>
+    <string name="video_setting">Video effect</string>
+    <string name="video_effect_saturation">Saturation</string>
+    <string name="video_effect_contrast">Contrast</string>
+    <string name="video_effect_brightness">Brightness</string>
+    <string name="video_effect_gamma">Gamma</string>
+    <string name="video_effect_hue">Hue</string>
+    <string name="video_effect_temperature">Temperature</string>
+    <string name="video_effect_sharpness">Sharpness</string>
+    <string name="video_effect_shadow">Shadow</string>
+    <string name="video_effect_reset">Reset</string>
+    <string name="error_video_effect_unsupported">Video effect is not supported by the current player</string>
     <string name="danmaku_show_special">Special type</string>
     <string name="danmaku_section_appearance">Appearance</string>
     <string name="danmaku_section_display">Display</string>
