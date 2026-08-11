@@ -1,5 +1,24 @@
 # Changelog
 
+## 5.5.82 — 播放记录远端同步（Step4b，最后一块） (2026-08-11)
+
+移植 webhtv 播放记录同步的最后一块：**远端同步引擎**，从自建中转服务拉取/合并播放记录与删除事件，支持增量游标与站点过滤。
+
+### 新增
+
+- `playback/`：`RemoteSyncConfig`（远端源配置：URL/token/站点过滤/间隔/游标）、`PlaybackRemoteSyncStore`（配置持久化）、`PlaybackRemoteSyncPayload`（响应解析：upserts/deletions/nextSince 多格式兼容）、`PlaybackRemoteSyncResult`、`PlaybackRemoteSyncer`（定时拉取 + 对账）
+- `PlaybackProgressWriter` 新增远端变体：`applyFromRemoteSync`/`deleteFromRemoteSync`（带墓碑与远端时间戳校验，防旧写入复活/过期覆盖）
+
+### 修改
+
+- `App.startBackgroundServices` 启动 `PlaybackRemoteSyncer`（首次 3s、周期 5min，受同步总开关与隐身模式保护）
+
+### 说明
+
+- 需自建中转服务（Cloudflare/Deno/Vercel/Go/Rust，见 webhome-devkit 文档）并配置远端源后才生效；无配置时静默不动作
+- 至此播放记录同步四步全部完成：只读上报 / Webhook / 进度写入 / 删除墓碑 / 远端同步
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.81 — 更新下载回退：universal APK 超 CNB 限制时走 GitHub (2026-08-11)
 
 universal APK（含 arm64+armv7 双 ABI 原生库）无法安全压到 CNB raw 的 100 MiB 限制内（lxml 为蜘蛛体系必需，不可裁剪）。改为**更新下载时自动探测**：CNB 对 APK 返回 4xx（413 超限）时回退到 GitHub Releases 下载。

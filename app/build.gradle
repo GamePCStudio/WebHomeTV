@@ -23,8 +23,8 @@ android {
         applicationId "com.fongmi.android.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 631
-        versionName "5.5.81"
+        versionCode 632
+        versionName "5.5.82"
         resConfigs "en", "zh-rCN", "zh-rTW"
         javaCompileOptions {
             annotationProcessorOptions {

@@ -42,18 +42,30 @@ public final class PlaybackProgressWriter {
     }
 
     private static synchronized PlaybackProgressApplyResult applyInternal(PlaybackProgressInput input) {
+        return applyInternal(input, PlaybackDeleteTombstoneStore.snapshot(), false);
+    }
+
+    private static synchronized PlaybackProgressApplyResult applyInternal(PlaybackProgressInput input, List<PlaybackDeleteTombstone> tombstones, boolean remote) {
         if (Setting.isIncognito()) return PlaybackProgressApplyResult.failed(input, "隐身模式不允许写入");
         if (input == null) return PlaybackProgressApplyResult.failed((PlaybackProgressInput) null, "请求体不能为空");
         input.normalize();
         int cid = targetCid(input);
         if (cid <= 0) return PlaybackProgressApplyResult.skipped(input, input.historyKey, "接口不匹配", 0);
-        String error = input.validate();
+        long remoteUpdatedAt = input.updatedAt;
+        long deletedAt = PlaybackDeleteTombstoneStore.latest(tombstones, input.configKey, cid, input.historyKey, input.siteKey, input.vodId);
+        if (remote) {
+            // The caller's snapshot may have been taken just before a local delete.
+            // Re-read while holding the writer lock so an in-flight tombstone wins.
+            deletedAt = Math.max(deletedAt, PlaybackDeleteTombstoneStore.latest(PlaybackDeleteTombstoneStore.snapshot(), input.configKey, cid, input.historyKey, input.siteKey, input.vodId));
+        }
+        if (remote && remoteUpdatedAt <= 0 && deletedAt > 0) return PlaybackProgressApplyResult.skipped(input, input.historyKey, "记录已删除且远端缺少更新时间", deletedAt);
+        String error = input.validate(!remote || deletedAt <= 0);
         if (!TextUtils.isEmpty(error)) return PlaybackProgressApplyResult.failed(input, error);
         if (input.updatedAt <= 0) input.updatedAt = System.currentTimeMillis();
-        long deletedAt = PlaybackDeleteTombstoneStore.latest(PlaybackDeleteTombstoneStore.snapshot(), input.configKey, cid, input.historyKey, input.siteKey, input.vodId);
         if (deletedAt > 0 && input.updatedAt <= deletedAt) return PlaybackProgressApplyResult.skipped(input, input.historyKey, "记录已被删除", deletedAt);
         String requestedKey = input.targetHistoryKey(cid);
         History local = findLocal(cid, input, requestedKey);
+        if (local != null && input.updatedAt <= local.getCreateTime()) return PlaybackProgressApplyResult.skipped(input, local.getKey(), "远端记录不新于本地", local.getCreateTime());
         String key = local == null ? requestedKey : local.getKey();
         History history = local == null ? new History() : local.copy();
         history.setKey(key);
@@ -70,6 +82,28 @@ public final class PlaybackProgressWriter {
         AppDatabase.get().getHistoryDao().insertOrUpdate(history);
         RefreshEvent.history();
         return local == null ? PlaybackProgressApplyResult.created(input, history.getKey()) : PlaybackProgressApplyResult.updated(input, history.getKey());
+    }
+
+    public static PlaybackProgressBatchResult applyFromRemoteSync(List<PlaybackProgressInput> inputs, RemoteSyncConfig config) {
+        PlaybackProgressBatchResult batch = new PlaybackProgressBatchResult();
+        if (!ViewingRecordSyncStore.isEnabled()) {
+            batch.add(PlaybackProgressApplyResult.failed((PlaybackProgressInput) null, "观影记录同步未开启"));
+            return batch;
+        }
+        List<PlaybackDeleteTombstone> tombstones = PlaybackDeleteTombstoneStore.snapshot();
+        if (inputs != null) for (PlaybackProgressInput input : inputs) {
+            input = input == null ? null : input.normalize();
+            if (input == null) {
+                batch.add(PlaybackProgressApplyResult.failed((PlaybackProgressInput) null, "请求体不能为空"));
+            } else if (config != null && !config.matchesSite(input.siteKey)) {
+                batch.add(PlaybackProgressApplyResult.skipped(input, input.targetHistoryKey(targetCid(input)), "站点不匹配", 0));
+            } else if (!TextUtils.isEmpty(input.configKey) && targetCid(input) <= 0) {
+                batch.add(PlaybackProgressApplyResult.skipped(input, input.historyKey, "接口不匹配", 0));
+            } else {
+                batch.add(applyInternal(input, tombstones, true));
+            }
+        }
+        return batch;
     }
 
     private static History findLocal(int cid, PlaybackProgressInput input, String key) {
@@ -113,17 +147,35 @@ public final class PlaybackProgressWriter {
     }
 
     private static synchronized PlaybackProgressApplyResult deleteInternal(PlaybackProgressDeleteInput input) {
-        if (Setting.isIncognito()) return PlaybackProgressApplyResult.failed((PlaybackProgressDeleteInput) null, "隐身模式不允许清理");
+        return deleteInternal(input, null, false, false);
+    }
+
+    public static PlaybackProgressBatchResult deleteFromRemoteSync(List<PlaybackProgressDeleteInput> inputs, RemoteSyncConfig config) {
+        PlaybackProgressBatchResult batch = new PlaybackProgressBatchResult();
+        if (!ViewingRecordSyncStore.isEnabled()) {
+            batch.add(PlaybackProgressApplyResult.failed((PlaybackProgressDeleteInput) null, "观影记录同步未开启"));
+            return batch;
+        }
+        if (inputs != null) for (PlaybackProgressDeleteInput input : inputs) {
+            batch.add(deleteInternal(input, config, true, false));
+        }
+        return batch;
+    }
+
+    private static synchronized PlaybackProgressApplyResult deleteInternal(PlaybackProgressDeleteInput input, RemoteSyncConfig filter, boolean remote, boolean notify) {
+        if (Setting.isIncognito() && !notify) return PlaybackProgressApplyResult.failed((PlaybackProgressDeleteInput) null, "隐身模式不允许清理");
         if (input == null) return PlaybackProgressApplyResult.failed((PlaybackProgressDeleteInput) null, "请求体不能为空");
         input.normalize();
+        if (!matchesFilter(input, filter)) return PlaybackProgressApplyResult.skipped(input, input.historyKey, "站点不匹配");
         int cid = targetCid(input);
         if (cid <= 0) return PlaybackProgressApplyResult.skipped(input, input.historyKey, "接口不匹配");
+        if (remote && input.deletedAt <= 0) return PlaybackProgressApplyResult.failed(input, "远端删除记录缺少deletedAt");
+        if (!remote && input.isAllScope() && !input.confirm) return PlaybackProgressApplyResult.failed(input, "全量清理需要confirm=true");
+        if (input.isSiteScope() && TextUtils.isEmpty(input.siteKey)) return PlaybackProgressApplyResult.failed(input, "按站点清理需要siteKey");
         if (!input.isAllScope() && !input.isSiteScope() && TextUtils.isEmpty(input.historyKey)
                 && (TextUtils.isEmpty(input.siteKey) || TextUtils.isEmpty(input.vodId))) {
             return PlaybackProgressApplyResult.failed(input, "historyKey、siteKey+vodId或siteKey不能为空");
         }
-        if (input.isAllScope() && !input.confirm) return PlaybackProgressApplyResult.failed(input, "全量清理需要confirm=true");
-        if (input.isSiteScope() && TextUtils.isEmpty(input.siteKey)) return PlaybackProgressApplyResult.failed(input, "按站点清理需要siteKey");
         if (input.deletedAt <= 0) input.deletedAt = System.currentTimeMillis();
 
         PlaybackDeleteTombstoneStore.record(input, cid);
@@ -131,18 +183,31 @@ public final class PlaybackProgressWriter {
         HistoryDao dao = AppDatabase.get().getHistoryDao();
         List<History> candidates = candidates(dao, cid, input);
         int affected = 0;
+        int newer = 0;
+        long deletedAt = input.deletedAt;
         for (History history : candidates) {
-            long deletedAt = PlaybackDeleteTombstoneStore.latest(tombstones, input.configKey, cid,
-                    history.getKey(), history.getSiteKey(), history.getVodId());
-            if (history.getCreateTime() > deletedAt) continue;
+            if (filter != null && !filter.matchesSite(history.getSiteKey())) continue;
+            long cutoff = Math.max(deletedAt, PlaybackDeleteTombstoneStore.latest(tombstones, input.configKey, cid,
+                    history.getKey(), history.getSiteKey(), history.getVodId()));
+            if (remote && history.getCreateTime() > cutoff) {
+                newer++;
+                continue;
+            }
             int count = dao.delete(cid, history.getKey());
             if (count <= 0) continue;
             AppDatabase.get().getTrackDao().delete(history.getKey());
             affected += count;
         }
-        if (affected > 0) RefreshEvent.history();
+        if (affected > 0 && !notify) RefreshEvent.history();
         if (affected > 0) return PlaybackProgressApplyResult.deleted(input, resultKey(input), affected);
+        if (newer > 0) return PlaybackProgressApplyResult.skipped(input, resultKey(input), "本地记录更新于删除事件");
         return PlaybackProgressApplyResult.skipped(input, resultKey(input), "本地记录不存在");
+    }
+
+    private static boolean matchesFilter(PlaybackProgressDeleteInput input, RemoteSyncConfig filter) {
+        if (filter == null || filter.siteKeys == null || filter.siteKeys.isEmpty()) return true;
+        if (input.isAllScope()) return true;
+        return !TextUtils.isEmpty(input.siteKey) && filter.matchesSite(input.siteKey);
     }
 
     private static List<History> candidates(HistoryDao dao, int cid, PlaybackProgressDeleteInput input) {
