@@ -32,7 +32,7 @@ public abstract class HistoryDao extends BaseDao<History> {
     public abstract List<History> search(int cid, String keyword);
 
     @Query("DELETE FROM History WHERE cid = :cid AND `key` = :key")
-    public abstract void delete(int cid, String key);
+    public abstract int delete(int cid, String key);
 
     @Query("DELETE FROM History WHERE cid = :cid")
     public abstract void delete(int cid);

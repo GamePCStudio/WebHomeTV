@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.78 — 播放记录删除 API（构建修复） (2026-08-11)
+
+修复 v5.5.77 编译错误：`HistoryDao.delete(int, String)` 由 `void` 改为返回 `int`（删除处理需统计受影响行数；对忽略返回值的既有调用方源码兼容）。
+
 ## 5.5.77 — 播放记录删除 API + 删除墓碑 (2026-08-11)
 
 从 webhtv-main 移植播放记录同步的删除能力：`DELETE` 语义的 `POST /api/playback/progress/delete`，配合删除墓碑防止旧写入复活已删记录。
