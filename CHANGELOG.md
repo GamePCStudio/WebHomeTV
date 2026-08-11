@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.65 — 视频色彩调节支持 MPV (2026-08-11)
+
+补全视频色彩调节的 MPV 支持：此前仅 EXO 可用，现通过 MPV 原生 VO 属性（亮度/对比度/饱和度/伽马/色相）实现同款调节。
+
+### 新增
+
+- **MPV 视频色彩调节**: `MpvPlayer` 新增 `setVideoEqualizer()`（设置 `brightness`/`contrast`/`saturation`/`gamma`/`hue` VO 属性）
+- `MpvPlayerEngine` 重写 `supportsVideoEffects()` / `applyVideoProfile()` / `clearVideoProfile()`，将 `VideoEffectProfile` 换算为 MPV 属性范围
+- 引擎统一：`PlayerEngine` 新增 `applyVideoProfile()` / `clearVideoProfile()` 默认实现；`ExoPlayerEngine` 将色彩效果控制器收纳到引擎内部并实现 profile 应用
+
+### 修改
+
+- `PlayerManager` 改用引擎级 `applyVideoProfile()`/`clearVideoProfile()`，`canSetVideoSetting()` 现对 EXO 与 MPV 均可用
+- 视频设置对话框在 EXO 与 MPV 下均可开启调节
+
+### 说明
+
+- MPV 采用 VO 属性实现，未覆盖色温/锐度/阴影（MPV 无对应原生属性，仅亮度/对比度/饱和度/伽马/色相生效）；与 LUT 互不冲突
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.64 — 视频色彩调节 (2026-08-11)
 
 从 TV-fongmi 移植视频色彩调节能力（EXO 内核）：轨道弹窗新增「设置」入口，可调整饱和度/对比度/亮度/伽马/色相/色温/锐度/阴影。

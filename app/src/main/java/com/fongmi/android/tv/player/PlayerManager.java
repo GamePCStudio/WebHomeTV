@@ -12,7 +12,6 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.VideoSize;
-import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.danmaku.DanmakuConfig;
 import androidx.media3.ui.danmaku.DanmakuController;
 
@@ -33,7 +32,6 @@ import com.fongmi.android.tv.player.exo.ExoNetworkGuardBufferPolicy;
 import com.fongmi.android.tv.player.exo.ExoNetworkGuardController;
 import com.fongmi.android.tv.player.exo.ExoNetworkGuardEligibility;
 import com.fongmi.android.tv.player.exo.ForwardBufferTrend;
-import com.fongmi.android.tv.player.effect.video.ExoVideoEffectController;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.ExoPerformanceSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -77,8 +75,6 @@ public class PlayerManager implements ParseCallback {
     private float networkProtectionSupportedSpeed = 1f;
     private long networkProtectionMediaBitrate;
     private int networkProtectionRebufferCount;
-
-    private final ExoVideoEffectController videoEffectController = new ExoVideoEffectController();
 
     public PlayerManager(Callback callback) {
         this.runnable = () -> callback.onError(ResUtil.getString(R.string.error_play_timeout));
@@ -259,16 +255,16 @@ public class PlayerManager implements ParseCallback {
     }
 
     public boolean canSetVideoSetting() {
-        return playerType == PlayerSetting.EXO && engine.supportsVideoEffects();
+        return engine.supportsVideoEffects();
     }
 
     public void refreshVideoSetting() {
         if (!canSetVideoSetting()) return;
-        videoEffectController.apply((ExoPlayer) engine.getPlayer(), VideoSetting.getAppliedProfile());
+        engine.applyVideoProfile(VideoSetting.getAppliedProfile());
     }
 
     public void clearVideoEffect() {
-        if (engine != null && engine.getPlayer() instanceof ExoPlayer exo) videoEffectController.clear(exo);
+        engine.clearVideoProfile();
     }
 
     public void togglePlayer() {

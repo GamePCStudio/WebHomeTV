@@ -530,6 +530,15 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
         applyShaderPipeline(false);
     }
 
+    public void setVideoEqualizer(float brightness, float contrast, float saturation, float gamma, float hue) {
+        if (!initialized) return;
+        safeSetPropertyDouble("brightness", brightness);
+        safeSetPropertyDouble("contrast", contrast);
+        safeSetPropertyDouble("saturation", saturation);
+        safeSetPropertyDouble("gamma", gamma);
+        safeSetPropertyDouble("hue", hue);
+    }
+
     public PlayerCacheState getCacheState() {
         if (initialized && mediaItem != null) refreshCacheState();
         return new PlayerCacheState(

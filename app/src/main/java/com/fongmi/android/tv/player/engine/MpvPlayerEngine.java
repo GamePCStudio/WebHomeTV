@@ -23,6 +23,7 @@ import com.fongmi.android.tv.player.PlaybackRoute;
 import com.fongmi.android.tv.player.PlaybackTrace;
 import com.fongmi.android.tv.player.exo.ExoUtil;
 import com.fongmi.android.tv.player.exo.TrackUtil;
+import com.fongmi.android.tv.player.effect.video.VideoEffectProfile;
 import com.fongmi.android.tv.player.lut.MpvLutShader;
 import com.fongmi.android.tv.player.mpv.MpvConfigStore;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -215,6 +216,26 @@ public class MpvPlayerEngine implements PlayerEngine {
     @Override
     public void setNativeLutShader(MpvLutShader shader) {
         player.setLutShader(shader);
+    }
+
+    @Override
+    public boolean supportsVideoEffects() {
+        return true;
+    }
+
+    @Override
+    public void applyVideoProfile(VideoEffectProfile profile) {
+        player.setVideoEqualizer(
+                profile.getBrightness() * 100.0f,
+                (profile.getContrast() - 1.0f) * 100.0f,
+                (profile.getSaturation() - 1.0f) * 100.0f,
+                (profile.getGamma() - 1.0f) * 100.0f,
+                profile.getHue() * 100.0f / 180.0f);
+    }
+
+    @Override
+    public void clearVideoProfile() {
+        player.setVideoEqualizer(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
 
     @Override

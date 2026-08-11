@@ -11,6 +11,7 @@ import androidx.media3.common.Tracks;
 import com.fongmi.android.tv.bean.Track;
 import com.fongmi.android.tv.player.PlaybackRoute;
 import com.fongmi.android.tv.player.PlaybackTrace;
+import com.fongmi.android.tv.player.effect.video.VideoEffectProfile;
 import com.fongmi.android.tv.player.lut.MpvLutShader;
 
 import java.util.Collections;
@@ -75,6 +76,12 @@ public interface PlayerEngine {
     }
 
     default void setVideoEffects(List<Effect> effects) {
+    }
+
+    default void applyVideoProfile(VideoEffectProfile profile) {
+    }
+
+    default void clearVideoProfile() {
     }
 
     default boolean supportsNativeLut() {

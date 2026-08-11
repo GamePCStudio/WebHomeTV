@@ -12,6 +12,8 @@ import androidx.media3.exoplayer.ExoPlayer;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Track;
+import com.fongmi.android.tv.player.effect.video.ExoVideoEffectController;
+import com.fongmi.android.tv.player.effect.video.VideoEffectProfile;
 import com.fongmi.android.tv.player.exo.ErrorMsgProvider;
 import com.fongmi.android.tv.player.exo.ExoUtil;
 import com.fongmi.android.tv.player.exo.TrackUtil;
@@ -24,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class ExoPlayerEngine implements PlayerEngine {
 
     private final ErrorMsgProvider provider;
+    private final ExoVideoEffectController videoEffectController;
     private PlaySpec spec;
     private Player player;
     private int decode;
@@ -31,6 +34,7 @@ public class ExoPlayerEngine implements PlayerEngine {
     public ExoPlayerEngine(int decode, Player.Listener listener) {
         this.player = ExoUtil.buildPlayer(decode, listener);
         this.provider = new ErrorMsgProvider();
+        this.videoEffectController = new ExoVideoEffectController();
         this.decode = decode;
     }
 
@@ -84,6 +88,16 @@ public class ExoPlayerEngine implements PlayerEngine {
     @Override
     public void setVideoEffects(List<Effect> effects) {
         if (player instanceof ExoPlayer exo) exo.setVideoEffects(effects);
+    }
+
+    @Override
+    public void applyVideoProfile(VideoEffectProfile profile) {
+        if (player instanceof ExoPlayer exo) videoEffectController.apply(exo, profile);
+    }
+
+    @Override
+    public void clearVideoProfile() {
+        if (player instanceof ExoPlayer exo) videoEffectController.clear(exo);
     }
 
     @Override
