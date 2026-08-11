@@ -1,5 +1,29 @@
 # Changelog
 
+## 5.5.77 — 播放记录删除 API + 删除墓碑 (2026-08-11)
+
+从 webhtv-main 移植播放记录同步的删除能力：`DELETE` 语义的 `POST /api/playback/progress/delete`，配合删除墓碑防止旧写入复活已删记录。
+
+### 新增
+
+- `bean/PlaybackDeleteTombstone`：删除墓碑模型（config/scope/site/vod/时间戳）
+- `playback/PlaybackDeleteTombstoneStore`：墓碑持久化（**Prefers 实现**，避免 Room 迁移）+ 90 天保留 + 单调最新判定
+- `playback/PlaybackProgressDeleteInput`：删除请求（全量/站点/单条/多别名解析/confirm 校验）
+- `PlaybackProgressWriter.deleteFromLocalApi`：本地删除（先记墓碑再删 History+Track）
+- `HistoryDao` 补充 `findAll(cid)`
+
+### 修改
+
+- `PlaybackProgressApi` 新增 `/api/playback/progress/delete` 端点（批量）
+- 写入路径增加墓碑检查：已删记录不复活
+- `PlaybackProgressApplyResult` 补回删除相关重载
+
+### 说明
+
+- 全量清理需 `confirm=true`，按站点清理需 `siteKey`；受同步总开关 + 本机写入开关 + 隐身三重保护
+- 墓碑用 Prefers 而非 Room（webhtv 用 Room 实体需 DB 迁移，此处避免）；远端同步（Step4b）后续
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.76 — 播放进度写入 API（构建修复） (2026-08-11)
 
 修复 v5.5.75 编译错误：`PlaybackProgressApi.doResponse` 补回 `catch (Throwable)` 以捕获 `readBody` 抛出的 checked `Exception`。

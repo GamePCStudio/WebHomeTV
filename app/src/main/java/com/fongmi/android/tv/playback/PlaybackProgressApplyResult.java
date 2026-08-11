@@ -31,7 +31,32 @@ public class PlaybackProgressApplyResult {
         return result;
     }
 
+    public static PlaybackProgressApplyResult skipped(PlaybackProgressDeleteInput input, String historyKey, String message) {
+        PlaybackProgressApplyResult result = base(input, historyKey);
+        result.success = true;
+        result.action = "skipped";
+        result.message = message == null ? "" : message;
+        return result;
+    }
+
+    public static PlaybackProgressApplyResult deleted(PlaybackProgressDeleteInput input, String historyKey, int affected) {
+        PlaybackProgressApplyResult result = base(input, historyKey);
+        result.success = true;
+        result.action = "deleted";
+        result.message = "";
+        result.affected = affected;
+        return result;
+    }
+
     public static PlaybackProgressApplyResult failed(PlaybackProgressInput input, String message) {
+        PlaybackProgressApplyResult result = base(input, input == null ? "" : input.historyKey);
+        result.success = false;
+        result.action = "failed";
+        result.message = message == null ? "" : message;
+        return result;
+    }
+
+    public static PlaybackProgressApplyResult failed(PlaybackProgressDeleteInput input, String message) {
         PlaybackProgressApplyResult result = base(input, input == null ? "" : input.historyKey);
         result.success = false;
         result.action = "failed";
@@ -57,6 +82,19 @@ public class PlaybackProgressApplyResult {
             result.vodId = input.vodId;
             result.episodeName = input.episodeName;
             result.remoteUpdatedAt = input.updatedAt;
+        }
+        return result;
+    }
+
+    private static PlaybackProgressApplyResult base(PlaybackProgressDeleteInput input, String historyKey) {
+        PlaybackProgressApplyResult result = new PlaybackProgressApplyResult();
+        result.historyKey = historyKey == null ? "" : historyKey;
+        if (input != null) {
+            result.siteKey = input.siteKey;
+            result.configKey = input.configKey;
+            result.vodId = input.vodId;
+            result.episodeName = input.episodeName;
+            result.remoteUpdatedAt = input.deletedAt;
         }
         return result;
     }

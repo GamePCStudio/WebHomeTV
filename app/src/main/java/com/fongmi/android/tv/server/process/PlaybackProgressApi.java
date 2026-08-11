@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.playback.PlaybackProgressApplyResult;
 import com.fongmi.android.tv.playback.PlaybackProgressBatchResult;
+import com.fongmi.android.tv.playback.PlaybackProgressDeleteInput;
 import com.fongmi.android.tv.playback.PlaybackProgressInput;
 import com.fongmi.android.tv.playback.PlaybackProgressWriter;
 import com.fongmi.android.tv.playback.ViewingRecordSyncStore;
@@ -29,8 +30,10 @@ public class PlaybackProgressApi implements Process {
     public boolean isRequest(IHTTPSession session, String url) {
         return "/api/playback/progress".equals(url)
                 || "/api/playback/progress/batch".equals(url)
+                || "/api/playback/progress/delete".equals(url)
                 || "/playback/progress".equals(url)
-                || "/playback/progress/batch".equals(url);
+                || "/playback/progress/batch".equals(url)
+                || "/playback/progress/delete".equals(url);
     }
 
     @Override
@@ -44,6 +47,7 @@ public class PlaybackProgressApi implements Process {
             String body = readBody(session, files);
             if (TextUtils.isEmpty(body)) body = session.getParms().get("body");
             if (TextUtils.isEmpty(body)) return cors(error(Response.Status.BAD_REQUEST, 400, "请求体不能为空"), session);
+            if (url.endsWith("/delete")) return cors(deleteBatch(body), session);
             if (url.endsWith("/batch")) return cors(writeBatch(body), session);
             return cors(writeOne(body), session);
         } catch (IllegalArgumentException e) {
@@ -93,6 +97,14 @@ public class PlaybackProgressApi implements Process {
         if (inputs.isEmpty()) return error(Response.Status.BAD_REQUEST, 400, "items不能为空");
         PlaybackProgressBatchResult result = PlaybackProgressWriter.applyFromLocalApi(inputs);
         SpiderDebug.log("playback-progress-api", "batch total=%s applied=%s skipped=%s failed=%s", result.total, result.applied, result.skipped, result.failed);
+        return json(Response.Status.OK, App.gson().toJson(result));
+    }
+
+    private Response deleteBatch(String body) {
+        List<PlaybackProgressDeleteInput> inputs = PlaybackProgressDeleteInput.listFromJson(body);
+        if (inputs.isEmpty()) return error(Response.Status.BAD_REQUEST, 400, "items不能为空");
+        PlaybackProgressBatchResult result = PlaybackProgressWriter.deleteFromLocalApi(inputs);
+        SpiderDebug.log("playback-progress-api", "delete total=%s applied=%s deleted=%s skipped=%s failed=%s", result.total, result.applied, result.deleted, result.skipped, result.failed);
         return json(Response.Status.OK, App.gson().toJson(result));
     }
 
