@@ -55,7 +55,7 @@ import com.fongmi.android.tv.impl.CustomTarget;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.player.PlayerHelper;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.playback.PlaybackRuntime;
+import com.fongmi.android.tv.playback.PlaybackEventCollector;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -573,8 +573,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         }
         mBinding.widget.title.setSelected(true);
         updateHistory(episode);
-        PlaybackRuntime.setPlayer(player());
-        PlaybackRuntime.updateHistory(mHistory);
+        PlaybackEventCollector.get().setPlayer(player());
+        PlaybackEventCollector.get().updateHistory(mHistory);
         showProgress();
     }
 
@@ -1349,6 +1349,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     @Override
     protected void onStateChanged(int state) {
+        PlaybackEventCollector.get().onPlaybackStateChanged(player(), state);
         switch (state) {
             case Player.STATE_BUFFERING:
                 showProgress();
@@ -1366,6 +1367,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     @Override
     protected void onPlayingChanged(boolean isPlaying) {
+        PlaybackEventCollector.get().onIsPlayingChanged(player(), isPlaying);
         if (isPlaying) {
             hideCenter();
         } else if (isPaused()) {
@@ -1392,6 +1394,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mHistory.setCreateTime(time);
         mHistory.setPosition(position = player().getPosition());
         mHistory.setDuration(duration = player().getDuration());
+        PlaybackEventCollector.get().onProgress(mHistory, player());
         if (mHistory.canSave() && mHistory.canSync()) syncHistory();
         if (mHistory.getEnding() > 0 && duration > 0 && mHistory.getEnding() + position >= duration) {
             checkEnded(false);
@@ -1690,6 +1693,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     @Override
     protected void onStop() {
         super.onStop();
+        PlaybackEventCollector.get().onStop(player());
         if (PlayerSetting.isBackgroundOff()) mClock.stop();
     }
 
@@ -1716,8 +1720,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         RefreshEvent.keep();
         App.removeCallbacks(mR1, mR2, mR3, mR4);
         SiteHealthStore.flush();
-        PlaybackRuntime.setPlayer(null);
-        PlaybackRuntime.updateHistory(null);
+        PlaybackEventCollector.get().setPlayer(null);
+        PlaybackEventCollector.get().updateHistory(null);
         super.onDestroy();
     }
 }

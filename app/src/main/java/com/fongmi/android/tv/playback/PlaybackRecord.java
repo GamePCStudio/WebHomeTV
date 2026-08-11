@@ -114,6 +114,14 @@ public class PlaybackRecord {
         return record;
     }
 
+    public PlaybackRecord withEvent(String event) {
+        PlaybackRecord record = copy();
+        record.event = event == null ? "" : event;
+        record.eventId = TextUtils.isEmpty(record.event) ? "" : UUID.randomUUID().toString();
+        record.timestamp = System.currentTimeMillis();
+        return record;
+    }
+
     public PlaybackRecord copyFor(PlaybackFieldPolicy policy) {
         PlaybackRecord record = new PlaybackRecord();
         record.clear();
@@ -184,6 +192,41 @@ public class PlaybackRecord {
         if (policy.includes("client")) object.addProperty("client", client);
         if (policy.includes("clientKey") && !TextUtils.isEmpty(clientKey)) object.addProperty("clientKey", clientKey);
         return object;
+    }
+
+    private PlaybackRecord copy() {
+        PlaybackRecord record = new PlaybackRecord();
+        record.schema = schema;
+        record.event = event;
+        record.eventId = eventId;
+        record.timestamp = timestamp;
+        record.scope = scope;
+        record.deletedAt = deletedAt;
+        record.sessionId = sessionId;
+        record.dedupeKey = dedupeKey;
+        record.cid = cid;
+        record.configKey = configKey;
+        record.configName = configName;
+        record.historyKey = historyKey;
+        record.siteKey = siteKey;
+        record.siteName = siteName;
+        record.vodId = vodId;
+        record.vodName = vodName;
+        record.vodPic = vodPic;
+        record.flag = flag;
+        record.episodeName = episodeName;
+        record.episodeUrl = episodeUrl;
+        record.episodeIndex = episodeIndex;
+        record.state = state;
+        record.positionMs = positionMs;
+        record.durationMs = durationMs;
+        record.progress = progress;
+        record.speed = speed;
+        record.completed = completed;
+        record.appVersion = appVersion;
+        record.client = client;
+        record.clientKey = clientKey;
+        return record;
     }
 
     private void clear() {

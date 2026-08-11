@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.74 — 播放记录 Webhook 上报 (2026-08-11)
+
+从 webhtv-main 移植播放记录同步的**第二步**：新增 Webhook 上报能力，播放开始/进度/暂停/恢复/结束/停止时向配置的 Webhook URL 推送播放记录。
+
+### 新增
+
+- `playback/`：`WebhookConfig`（Webhook 配置，含字段预设 basic/standard/full/anonymous/custom）、`PlaybackWebhookStore`（配置持久化 + 失败熔断）、`PlaybackWebhookSender`（异步上报 + 重试 + 幂等头）、`PlaybackHttpHeaders`、`ViewingRecordSyncStore`（总开关）
+- `PlaybackEventCollector`：采集播放事件（start/progress/pause/resume/stopped/ended）并触发 Webhook
+- `PlaybackRecord` 补回 `withEvent()`/`copy()`；`PlaybackFieldPolicy` 恢复 `webhook()`/`anonymous()`/`custom()`
+
+### 修改
+
+- mobile/leanback `VideoActivity`：`getPlayer`/`onStateChanged`/`onPlayingChanged`/`onTimeChanged`/`onStop`/`onDestroy` 接线到 `PlaybackEventCollector`
+
+### 说明
+
+- 本步仅 Webhook 上报；进度写入 API 与远端同步因依赖 DB/删除墓碑/远端配置，留待后续
+- 默认关闭（`ViewingRecordSyncStore.isEnabled` 默认 true，但无 Webhook 配置时不发）；删除事件处理暂未移植
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.73 — 当前播放记录只读 API（构建修复 2） (2026-08-11)
 
 修复编译错误：恢复 `PlaybackRuntime.playerFor` 方法（此前编辑误删），`PlaybackRuntime` 保持 public 供 `VideoActivity` 接线。

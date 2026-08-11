@@ -23,8 +23,8 @@ android {
         applicationId "com.fongmi.android.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 623
-        versionName "5.5.73"
+        versionCode 624
+        versionName "5.5.74"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
