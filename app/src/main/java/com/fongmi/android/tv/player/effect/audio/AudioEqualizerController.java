@@ -14,7 +14,7 @@ import com.fongmi.android.tv.App;
 
 import java.util.Arrays;
 
-final class AudioEqualizerController {
+public final class AudioEqualizerController {
 
     private static final float MAX_CUTOFF_FREQUENCY_HZ = 20_000.0f;
 
