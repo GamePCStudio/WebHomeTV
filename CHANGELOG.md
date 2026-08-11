@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.76 — 播放进度写入 API（构建修复） (2026-08-11)
+
+修复 v5.5.75 编译错误：`PlaybackProgressApi.doResponse` 补回 `catch (Throwable)` 以捕获 `readBody` 抛出的 checked `Exception`。
+
 ## 5.5.75 — 播放进度写入 API（/api/playback/progress） (2026-08-11)
 
 从 webhtv-main 移植播放记录同步的**第三步**：新增本机播放进度写入 API，外部工具/爬虫可将播放进度写入本地历史。

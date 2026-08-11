@@ -48,6 +48,9 @@ public class PlaybackProgressApi implements Process {
             return cors(writeOne(body), session);
         } catch (IllegalArgumentException e) {
             return cors(error(Response.Status.BAD_REQUEST, 400, e.getMessage()), session);
+        } catch (Throwable e) {
+            SpiderDebug.log("playback-progress-api", e);
+            return cors(error(Response.Status.INTERNAL_ERROR, 500, e.getMessage()), session);
         }
     }
 
