@@ -14,6 +14,7 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.AdapterSiteBinding;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteHealthStore;
+import com.fongmi.android.tv.setting.SiteOrderStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,10 +58,19 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
     private void addAll() {
         for (Site site : VodConfig.get().getSites()) if (!site.isHide()) mItems.add(site);
         if (Setting.isSiteHealthDialogSort()) SiteHealthStore.sortSites(mItems);
+        SiteOrderStore.sortSites(mItems);
     }
 
     public List<Site> getItems() {
         return mItems;
+    }
+
+    public void drag(int from, int to) {
+        if (from < 0 || to < 0 || from >= mItems.size() || to >= mItems.size() || from == to) return;
+        Site moving = mItems.remove(from);
+        mItems.add(to, moving);
+        notifyItemMoved(from, to);
+        SiteOrderStore.save(mItems);
     }
 
     @Override

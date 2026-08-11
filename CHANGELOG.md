@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.70 — 站点弹窗手动排序记忆 (2026-08-11)
+
+从 webhtv-main 移植 `SiteOrderStore`：手机端点播源弹窗支持**长按拖拽排序**，顺序按站点配置持久化（每份配置独立记忆），下次打开弹窗自动恢复。
+
+### 新增
+
+- `setting/SiteOrderStore`：站点顺序持久化（`site_dialog_order_<cid>`，按配置分离），`sortSites` 恢复 / `save` 保存
+- mobile `SiteAdapter`：`sortSites` 恢复顺序；新增 `drag(from,to)` 完成拖拽移动并保存
+- mobile `SiteDialog`：挂载 `ItemTouchHelper`（上/下拖拽），长按拖动站点即可调整顺序
+
+### 说明
+
+- 仅手机端（leanback 为遥控器 UI，无触屏拖拽，与 webhtv 范围一致）
+- 手动顺序优先于站点健康排序（`SiteOrderStore.sortSites` 最后执行，仅在存在已保存顺序时生效）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.69 — 软件 DSP 音频效果通路（EXO，API 24+） (2026-08-11)
 
 从 TV-fongmi 移植软件 DSP 音频管线，补齐此前「仅硬件均衡器」缺口：不仅 API 28+ 的硬件 `DynamicsProcessing` 均衡器，现还支持 API 24–27 的软件均衡器，以及响度归一、动态稳定、前级/Boost 增益与软限幅等 DSP 处理。
