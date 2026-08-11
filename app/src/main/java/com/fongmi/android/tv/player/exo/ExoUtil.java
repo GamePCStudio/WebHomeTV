@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.player.exo;
 
 import android.content.Context;
+import android.os.Looper;
 import android.graphics.Color;
 import android.media.MediaCrypto;
 import android.media.MediaCodecList;
@@ -33,6 +34,8 @@ import androidx.media3.exoplayer.Renderer;
 import androidx.media3.exoplayer.RenderersFactory;
 import androidx.media3.exoplayer.audio.AudioSink;
 import androidx.media3.exoplayer.audio.AudioRendererEventListener;
+import androidx.media3.exoplayer.text.TextOutput;
+import androidx.media3.exoplayer.text.TextRenderer;
 import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider;
 import androidx.media3.exoplayer.audio.DefaultAudioSink;
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo;
@@ -207,19 +210,13 @@ public class ExoUtil {
             @Nullable ExoDecoderRuntimeSession decoderRuntimeSession,
             ExoDecoderRuntimeSession.OutputConfig decoderOutput,
             ExoFrameSchedulingPlayerSettings schedulingSettings) {
-        if (assHandler != null) {
-            assHandler.release();
-            assHandler = null;
-        }
-        AssRenderType renderType = AssRenderType.OVERLAY_OPEN_GL;
-        // maxRenderPixels = 1920*1080：4K 屏上对 ASS 渲染做降采样再 GPU 放大，省 CPU/内存（0 表示不限制）
-        assHandler = new AssHandler(renderType, new AssHandlerConfig(10000, 128, 1920 * 1080));
-        AssSubtitleParserFactory parserFactory = new AssSubtitleParserFactory(assHandler);
-        MediaSourceFactory assMediaSourceFactory = (MediaSourceFactory) buildMediaSourceFactory();
-        assMediaSourceFactory.applyAssSupport(parserFactory, assHandler);
-        RenderersFactory assRenderersFactory = new AssRenderersFactory(assHandler, buildPlaybackRenderersFactory(
-                decode, automatic ? decoderRuntimeSession : null, decoderOutput, schedulingSettings));
-        builder.setRenderersFactory(assRenderersFactory).setMediaSourceFactory(assMediaSourceFactory);
+                // ASS/SSA subtitle now rendered by Media3 native pipeline (EnhancedSsaDecoder injected
+        // via FfmpegRenderersFactory.buildTextRenderers):
+        // 1) Fixes "MKV embedded ASS shows nothing" caused by dialogue column mismatch;
+        // 2) Avoids libass OVERLAY_OPEN_GL rendering issues on Android 14 new GPUs
+        //    (GL_EXT_unpack_subimage native texture path);
+        // 3) Subtitles survive seek (Media3 subtitle pipeline handles seek correctly).
+        // libass effects (animation/karaoke) can be re-enabled after upstream ass-media fixes.
     }
 
     /**
@@ -227,14 +224,7 @@ public class ExoUtil {
      * 并让 AssHandler 监听播放器事件。
      */
     private static void attachAssSupport(ExoPlayer player) {
-        if (assHandler == null) return;
-        AssRenderType renderType = assHandler.getRenderType();
-        if (subtitleView != null && (renderType == AssRenderType.OVERLAY_CANVAS || renderType == AssRenderType.OVERLAY_OPEN_GL)) {
-            if (assSubtitleView != null) subtitleView.removeView(assSubtitleView);
-            assSubtitleView = new AssSubtitleView(subtitleView.getContext(), assHandler);
-            subtitleView.addView(assSubtitleView);
-        }
-        assHandler.init(player);
+                // libass OVERLAY rendering disabled (see prepareAssSupport); nothing to attach.
     }
 
     /** 释放 libass native 资源并摘掉 AssSubtitleView。PlayerManager.release() 与重建时都会走到。 */
@@ -826,6 +816,14 @@ public class ExoUtil {
                 out.add(getExtensionRendererIndex(videoRenderMode, videoPrefer, out), buildFfmpegVideoRenderer(allowedVideoJoiningTimeMs, eventHandler, eventListener));
             } catch (Throwable ignored) {
             }
+        }
+
+        @Override
+        protected void buildTextRenderers(Context context, TextOutput output, Looper outputLooper,
+                int extensionRendererMode, ArrayList<Renderer> out) {
+            // Enhanced SSA decoder: fixes MKV embedded ASS column mismatch + charset tolerance.
+            // All other subtitle formats keep default behavior.
+            out.add(new TextRenderer(output, outputLooper, new EnhancedSubtitleDecoderFactory()));
         }
 
         private FfmpegVideoRenderer buildFfmpegVideoRenderer(long allowedVideoJoiningTimeMs, Handler eventHandler, VideoRendererEventListener eventListener) {
