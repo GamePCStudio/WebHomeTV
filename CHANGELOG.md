@@ -1,5 +1,24 @@
 # Changelog
 
+## 5.5.79 — 更新修复：APK 压缩至 CNB 100 MiB 限制内 (2026-08-11)
+
+CNB 镜像的 raw 文件端点有 **100 MiB 硬限制**，此前 APK（100-105 MiB）通过 CNB 更新时报 `raw 文件大小 100 MiB 超过限制`。
+
+### 修改
+
+- `app/build.gradle`：`resConfigs "en", "zh-rCN", "zh-rTW"` 裁剪依赖的未用语言资源
+  - arm64 APK：105 → **99 MiB** ✓（<100 MiB）
+  - armv7 APK：87 → **86 MiB** ✓
+  - universal（双 ABI）：103 → **102-103 MiB**，仍略超限（见说明）
+- CI：新增 "Check APK sizes" 步骤，超限输出 warning
+- CI 镜像同步：改用 **git-lfs** 存储 APK 并**只保留最新版本**（删除旧 APK），避免镜像仓库继续膨胀（此前累计到 ~10 GiB）
+
+### 说明
+
+- universal APK 因同时含 arm64+armv7 双 ABI 原生库仍略超 100 MiB；arm64/armv7 设备（绝大多数，含 Pixel 7 Pro）已可正常通过 CNB 更新
+- 已有 10 GiB 镜像历史需在 CNB 仓库手动清理（重写历史或重建镜像），本版起不再继续增长
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.78 — 播放记录删除 API（构建修复） (2026-08-11)
 
 修复 v5.5.77 编译错误：`HistoryDao.delete(int, String)` 由 `void` 改为返回 `int`（删除处理需统计受影响行数；对忽略返回值的既有调用方源码兼容）。
