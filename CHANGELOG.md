@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.62 — EXO 自适应降速 + WebView 闪退修复 (2026-08-11)
+
+修复安卓 17 / Pixel 7 Pro 手机版闪退（issue #7），并从上游 WebHomeTV 移植 EXO 自适应降速网络保护（最小可验证集）。
+
+### 修复
+
+- **WebView 渲染进程崩溃闪退**: `CustomWebView` 新增 `onRenderProcessGone` 兜底（镜像 HomeWebController 模式，记日志后正常结束解析并返回 true），避免解析页渲染进程崩溃拖垮整个 App —— 对应 issue #7 安卓 17 手机版闪退
+
+### 新增
+
+- **EXO 自适应降速网络保护**: 从 WebHomeTV 移植 `ExoNetworkGuardController`（含 `ExoNetworkProtectionPolicy` / `ForwardBufferTrend` / `ExoNetworkGuardEligibility` / `ExoNetworkGuardBufferPolicy`）
+- 依据缓冲水位快慢趋势，VOD 播放时在网络吃紧自动在 0.85～1.00x 之间动态降速、网络恢复后平滑回升；仅作用于 EXO 内核 + 点播 + 用户 1.0x 场景
+- 增强设置新增「网络保护」开关（跟随性能自动档默认开启），经 `ExoPerformanceSetting` 偏好管理，`PlayerManager.setSpeed` 挂钩用户手动调速
+
+### 说明
+
+- 采用纯 buffer 模式（不含遥测/A-B 实验链），最小可验证移植，不影响 IJK/MPV 内核
+- **已知后续项**: `librtmp-jni.so`（由 media3-datasource-rtmp 引入）ELF 仅 4KB 对齐，在 16KB 页大小设备（如 Pixel 7 Pro 安卓 17）上播放 RTMP 流时存在 dlopen 崩溃风险；当前应用已开启 `pageSizeCompat="enabled"` 兼容模式，后续需将 RTMP 制品重编至 16KB 对齐或评估移除
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.61 — Phase 3A login-state learning (2026-07-22)
 
 从上游 WebHomeTV 移植登录态学习与一键同步，保留 webtv 安全底线；GitCloud 完整能力仍属后续阶段。

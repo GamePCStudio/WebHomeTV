@@ -8,6 +8,7 @@ import android.net.http.SslError;
 import android.text.TextUtils;
 import android.view.ViewGroup;
 import android.webkit.ConsoleMessage;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -157,6 +158,13 @@ public class CustomWebView extends WebView implements DialogInterface.OnDismissL
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if ("intent".equalsIgnoreCase(request.getUrl().getScheme())) return true;
                 return false;
+            }
+
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                SpiderDebug.log("webview-parse", "render process gone didCrash=%s priority=%s", detail.didCrash(), detail.rendererPriorityAtExit());
+                stop(true);
+                return true;
             }
         };
     }
