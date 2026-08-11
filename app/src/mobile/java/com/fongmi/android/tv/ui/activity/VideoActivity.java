@@ -64,6 +64,7 @@ import com.fongmi.android.tv.impl.CustomTarget;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.player.PlayerHelper;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.playback.PlaybackRuntime;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -569,6 +570,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         }
         mBinding.control.title.setSelected(true);
         updateHistory(episode);
+        PlaybackRuntime.setPlayer(player());
+        PlaybackRuntime.updateHistory(mHistory);
         showProgress();
     }
 
@@ -1789,6 +1792,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         RefreshEvent.keep();
         App.removeCallbacks(mR1, mR2, mR3, mR4);
         SiteHealthStore.flush();
+        PlaybackRuntime.setPlayer(null);
+        PlaybackRuntime.updateHistory(null);
         super.onDestroy();
     }
 }

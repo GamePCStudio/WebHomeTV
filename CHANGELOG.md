@@ -1,5 +1,26 @@
 # Changelog
 
+## 5.5.71 — 当前播放记录只读 API（/api/playback/current） (2026-08-11)
+
+从 webhtv-main 移植播放记录同步能力的**第一步**：新增只读的"当前播放"上报端点，供爬虫/外部工具查询本机正在播放的片源。
+
+### 新增
+
+- `playback/` 包：`PlaybackRuntime`（当前播放运行时单例）、`PlaybackRecord`（播放记录模型）、`PlaybackFieldPolicy`（字段策略）、`PlaybackConfigIdentity`（配置身份）、`PlaybackApi.current()`（只读获取当前播放记录）
+- `server/process/PlaybackRecordApi`：暴露 `GET/POST /api/playback/current?siteKey=xxx`（含 CORS），返回当前播放记录（schema/state/position/duration/progress/speed 等）
+- `server/Nano` 注册该端点
+
+### 修改
+
+- mobile/leanback `VideoActivity`：播放启动时 `PlaybackRuntime.setPlayer/updateHistory` 填充运行时，`onDestroy` 清理
+
+### 说明
+
+- 仅只读上报，不含写入/远端同步/Webhook（后续 Step2/Step3 逐步加入）
+- 隐身模式或无可读记录时返回 404；字段策略与 webhtv 一致（`apiSafe` 不含 episodeUrl 等敏感字段）
+- `client` 字段适配为 webtv 的 `BuildConfig.FLAVOR`
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.70 — 站点弹窗手动排序记忆 (2026-08-11)
 
 从 webhtv-main 移植 `SiteOrderStore`：手机端点播源弹窗支持**长按拖拽排序**，顺序按站点配置持久化（每份配置独立记忆），下次打开弹窗自动恢复。
