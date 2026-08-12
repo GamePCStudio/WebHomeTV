@@ -10,9 +10,12 @@ if (localPropsFile.exists()) {
     }
 }
 def hasReleaseSigning = localProps['storeFile'] && localProps['keyAlias'] && localProps['storePassword']
-if (gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') } && !hasReleaseSigning) {
-    throw new GradleException('Release signing is required for release builds')
-}
+def releaseKeyPassword = localProps['keyPassword'] ?: localProps['storePassword']
+def fastRelease = (project.findProperty('fastRelease') ?: 'false').toString().toBoolean()
+def buildTimestamp = new Date().format('yyyyMMddHHmm', TimeZone.getTimeZone('Asia/Shanghai'))
+def buildTime = fastRelease ? "fast-${buildTimestamp}" : buildTimestamp
+def releaseTag = (System.getenv('WEBHTV_RELEASE_TAG') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+def apkSuffix = (System.getenv('WEBHTV_APK_SUFFIX') ?: '').replaceAll('[^A-Za-z0-9._-]', '')
 
 android {
     namespace = 'com.fongmi.android.tv'
@@ -20,11 +23,14 @@ android {
     compileSdk libs.versions.compileSdk.get().toInteger()
 
     defaultConfig {
-        applicationId "com.fongmi.android.tv"
+        applicationId "com.fish.android.webhtv.motao"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
         versionCode 649
         versionName "5.5.99"
+        buildConfigField "String", "BUILD_TIME", "\"${buildTime}\""
+        buildConfigField "String", "BUILD_TAG", "\"${releaseTag}\""
+        buildConfigField "String", "MEDIA3_VERSION", "\"${libs.versions.media3.get()}\""
         resConfigs "en", "zh-rCN", "zh-rTW"
         javaCompileOptions {
             annotationProcessorOptions {
@@ -66,7 +72,7 @@ android {
             if (hasReleaseSigning) {
                 storeFile file(localProps['storeFile'])
                 keyAlias localProps['keyAlias']
-                keyPassword localProps['storePassword']
+                keyPassword releaseKeyPassword
                 storePassword localProps['storePassword']
             }
         }
@@ -74,9 +80,9 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled = true
-            shrinkResources = true
-            signingConfig = signingConfigs.release
+            minifyEnabled = !fastRelease
+            shrinkResources = !fastRelease
+            signingConfig = hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-rules-media.pro'
         }
     }
@@ -99,6 +105,7 @@ android {
     lint {
         disable 'UnsafeOptInUsageError'
         disable 'ExpiredTargetSdkVersion'
+        checkReleaseBuilds = !fastRelease
     }
 
     compileOptions {
@@ -114,7 +121,7 @@ androidComponents {
         def mode = flavors['mode'] ?: 'mode'
         def abi = flavors['abi'] ?: 'abi'
         variant.outputs.each { output ->
-            output.outputFileName.set("${mode}-${abi}.apk")
+            output.outputFileName.set("${mode}-${abi}${apkSuffix}.apk")
         }
     }
 }
