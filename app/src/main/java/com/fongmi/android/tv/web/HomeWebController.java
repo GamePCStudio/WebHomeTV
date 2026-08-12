@@ -586,6 +586,15 @@ public class HomeWebController {
         else listener.setChrome(payload);
     }
 
+    public void setViewport(WebHomeViewport viewport) {
+        this.viewport = viewport == null ? WebHomeViewport.EMPTY : viewport;
+        injectViewport();
+    }
+
+    public WebHomeViewport getViewport() {
+        return viewport;
+    }
+
     public void restoreChrome() {
         listener.restoreChrome();
     }

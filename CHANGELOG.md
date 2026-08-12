@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.5.92 — WebHome 集成（Step3：视口管道） (2026-08-12)
+
+WebHome 集成专项**第三步**：补全视口管道，让宿主可向 WebHome 控制器喂入视口数据（实际安全区/chrome 信息）。
+
+### 修改
+
+- `HomeWebController` 新增 `setViewport(WebHomeViewport)` / `getViewport()`（外部可注入视口并触发重新注入）
+- mobile `VodFragment`：`getViewport()` 返回当前视口；新增 `applyWebHomeViewport(WebHomeViewport)` 接入 `mWeb.setViewport`
+
+### 说明
+
+- 本步为**视口数据管道**（host → 控制器 → 页面 `fmviewport`），不涉及系统栏操作，安全非破坏
+- 真实安全区数据的计算（基于窗口 insets）与 chrome 模式（edge/immersive 隐藏系统栏）属更深 UI 子系统，后续单独评估
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.91 — WebHome 集成（Step2：视口注入 + chrome 管道） (2026-08-12)
 
 WebHome 集成专项**第二步**：把简化版 `fmviewport` 注入升级为 `WebHomeViewport` 驱动的丰富协议，并加入 `normalChrome`/`setChrome`/`restoreChrome` 管道。

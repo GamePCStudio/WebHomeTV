@@ -50,6 +50,7 @@ import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.web.HomeWebController;
+import com.fongmi.android.tv.web.WebHomeViewport;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -451,6 +452,15 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             return;
         }
         setWebFullscreen(!visible);
+    }
+
+    @Override
+    public WebHomeViewport getViewport() {
+        return mWeb == null ? WebHomeViewport.EMPTY : mWeb.getViewport();
+    }
+
+    public void applyWebHomeViewport(WebHomeViewport viewport) {
+        if (mWeb != null) mWeb.setViewport(viewport);
     }
 
     @Override
