@@ -124,6 +124,7 @@ public class HomeWebBridge {
                 case "app.search" -> search(payload);
                 case "app.openLive" -> openLive();
                 case "app.openKeep" -> openKeep();
+                case "app.openVod" -> openVod();
                 case "app.openSetting" -> openSetting();
                 case "app.history" -> history();
                 case "pan.check" -> checkLinks(payload);
@@ -266,6 +267,11 @@ public class HomeWebBridge {
 
     private String openKeep() {
         App.post(() -> KeepActivity.start(activity));
+        return "{}";
+    }
+
+    private String openVod() {
+        App.post(controller::openVod);
         return "{}";
     }
 

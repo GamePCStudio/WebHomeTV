@@ -470,6 +470,12 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     @Override
+    public void openVod() {
+        if (mWebFullscreen) setWebFullscreen(false);
+        homeContent();
+    }
+
+    @Override
     public void openSetting() {
         if (getActivity() instanceof HomeActivity) ((HomeActivity) getActivity()).change(1);
     }

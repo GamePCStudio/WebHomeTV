@@ -599,6 +599,10 @@ public class HomeWebController {
         listener.restoreChrome();
     }
 
+    public void openVod() {
+        listener.openVod();
+    }
+
     private JsonObject normalChrome() {
         JsonObject object = new JsonObject();
         object.addProperty("mode", WebHomeChrome.NORMAL);
@@ -691,6 +695,7 @@ public class HomeWebController {
                       search:(keyword,options)=>invoke('app.search',Object.assign({},options||{},{keyword})),
                       openLive:()=>invoke('app.openLive',{}),
                       openKeep:()=>invoke('app.openKeep',{}),
+                      openVod:()=>invoke('app.openVod',{}),
                       openSetting:()=>invoke('app.openSetting',{}),
                       history:()=>invoke('app.history',{})
                     },

@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.5.94 — WebHome 集成（Step5：openVod 接线） (2026-08-12)
+
+WebHome 集成专项**第五步**：接通 WebHome 页面 → 原生内容的 `openVod` 通道。
+
+### 修改
+
+- `HomeWebController.openVod()` → `Listener.openVod()`；JS 桥 `window.fongmi.app.openVod` 暴露
+- `HomeWebBridge`：新增 `app.openVod` 分发 → `App.post(controller::openVod)`
+- mobile `VodFragment.openVod()`：退出 WebHome 全屏并切回原生首页内容（`homeContent`）
+
+### 说明
+
+- WebHome 页面可调用 `app.openVod()` 切回原生点播内容；安全非破坏（新增方法/hook，不影响既有调用）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.93 — WebHome 集成（Step4：宿主真实视口） (2026-08-12)
 
 WebHome 集成专项**第四步**：宿主从窗口 insets 构建**真实安全区视口**并注入 WebHome 页面（此前视口为 EMPTY）。
