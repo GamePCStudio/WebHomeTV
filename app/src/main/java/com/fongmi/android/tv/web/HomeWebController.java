@@ -222,7 +222,7 @@ public class HomeWebController {
             String host = uri.getHost();
             if ("127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host) || "::1".equals(host)) {
                 int port = uri.getPort();
-                return port == -1 || port == Proxy.getPort();
+                if (port == -1 || port == Proxy.getPort()) return true;
             }
             if (sameOrigin(url, VodConfig.getUrl())) return true;
             return matchesAllowedOrigin(url);
