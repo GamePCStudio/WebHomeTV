@@ -543,12 +543,14 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
      * Applies a 10-band peaking equalizer through MPV's legacy {@code equalizer}
      * audio filter (MPlayer syntax: {@code af=equalizer=f=<Hz>:g=<dB>}, chained
      * per band). {@code levels} are band gains in the AudioEffectBands range; the
-     * caller converts to dB. An empty/zero equalizer clears the {@code af} chain.
+     * caller converts to dB. When {@code loudness} is true the standard MPV
+     * {@code loudnorm} filter is appended for loudness normalization. An
+     * empty/zero equalizer with loudness off clears the {@code af} chain.
      */
-    public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb) {
+    public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb, boolean loudness) {
         if (!initialized) return;
         if (frequenciesHz == null || gainsDb == null || frequenciesHz.length == 0 || frequenciesHz.length != gainsDb.length) {
-            safeSetPropertyString("af", "");
+            safeSetPropertyString("af", loudness ? "loudnorm" : "");
             return;
         }
         StringBuilder builder = new StringBuilder();
@@ -557,7 +559,14 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
             if (builder.length() > 0) builder.append(',');
             formatAfEqualizerBand(builder, frequenciesHz[i], gainsDb[i]);
         }
+        if (builder.length() > 0 && loudness) builder.append(",loudnorm");
+        else if (builder.length() == 0 && loudness) builder.append("loudnorm");
         safeSetPropertyString("af", builder.toString());
+    }
+
+    /** @deprecated use {@link #setAudioEqualizer(float[], float[], boolean)}. */
+    public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb) {
+        setAudioEqualizer(frequenciesHz, gainsDb, false);
     }
 
     private static void formatAfEqualizerBand(StringBuilder builder, float frequencyHz, float gainDb) {

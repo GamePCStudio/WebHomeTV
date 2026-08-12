@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.87 — MPV 音频响度归一化（loudnorm） (2026-08-12)
+
+为 MPV 内核补充音频 DSP 的第一步：开启响度归一化时，在 `af` 滤镜链末尾追加标准的 `loudnorm` 滤镜（默认关闭，不影响默认用户）。
+
+### 修改
+
+- `MpvPlayer.setAudioEqualizer(freq, gain, loudness)`：`loudness=true` 时在均衡器链后追加 `,loudnorm`；旧的 2 参方法保留并委托
+- `MpvPlayerEngine.applyAudioSetting`：传入 `config.isLoudnessEnabled()`；`clearAudioEffect` 清空
+
+### 说明
+
+- **默认关闭** → 默认用户 `af` 链与 v5.5.84 完全一致（零行为变化）；仅在用户开启"响度"时才追加 `loudnorm`
+- `safeSetPropertyString` 静默吞异常：即使打包的 MPV 不支持 `loudnorm` 也不会崩溃（仅该滤镜不生效）
+- 响度/稳定/限幅的完整 DSP 仍需 mpvplayer audio 扩展，后续评估
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.86 — 播放记录删除事件 Webhook 补全 (2026-08-11)
 
 补全播放记录同步的删除事件上报：此前删除记录**不触发** `playback.deleted` Webhook（Step2 时因 DeleteInput 未就绪而跳过）。现在删除/清空历史记录时向已配置的 Webhook 推送删除事件，配合删除墓碑防止远端复活。

@@ -257,13 +257,13 @@ public class MpvPlayerEngine implements PlayerEngine {
             frequencies[i] = AudioEffectBands.STANDARD.getCenterFrequency(i) / 1000.0f;
             gains[i] = i < levels.length ? levels[i] / 100.0f : 0f;
         }
-        player.setAudioEqualizer(frequencies, gains);
+        player.setAudioEqualizer(frequencies, gains, config.isLoudnessEnabled());
         return true;
     }
 
     @Override
     public void clearAudioEffect() {
-        player.setAudioEqualizer(null, null);
+        player.setAudioEqualizer(null, null, false);
     }
 
     @Override
