@@ -8,6 +8,7 @@ import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.web.GitRawUrlResolver;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Path;
 import com.github.catvod.utils.Prefers;
@@ -316,6 +317,10 @@ public class WebHomeExtensionRegistry {
     private void loadRemote(List<WebHomeExtension> result, String url, String siteKey, String baseUrl, boolean siteScoped, boolean defaultEnabled, JsonObject wrapper, Order order) {
         String sourceUrl = WebHomeExtension.resolve(baseUrl, url == null ? "" : url.trim());
         if (TextUtils.isEmpty(sourceUrl)) return;
+        // Resolve git-hosting URLs (github.com / cnb.cool / gitee.com ...) to their raw
+        // upstream form so remote extension manifests load correctly.
+        GitRawUrlResolver.RawUrl raw = GitRawUrlResolver.resolve(sourceUrl);
+        if (raw != null && !TextUtils.isEmpty(raw.upstream)) sourceUrl = raw.upstream;
         JsonElement element = WebHomeExtension.isScriptUrl(sourceUrl) ? null : WebHomeExtension.json(sourceUrl);
         if (element != null && element.isJsonArray()) {
             for (JsonElement item : elements(element)) loadElement(result, item, siteKey, sourceUrl, siteScoped, defaultEnabled, order);

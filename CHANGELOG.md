@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.5.89 — WebHome 扩展支持 git 原始地址解析 (2026-08-12)
+
+从 webhtv 移植 `GitRawUrlResolver`（纯 Java URL 解析工具），并接入 WebHome 扩展的远程加载：远程扩展配置里填 `github.com/...`、`cnb.cool/...`、`gitee.com/...` 等 git 仓库地址时，自动解析为 raw 上游地址，扩展清单可正常加载。
+
+### 新增
+
+- `web/GitRawUrlResolver`：解析 GitHub / Gist / Gitee / GitLab / CNB / Gitea 等 git 托管地址 → raw 上游地址（含 scope 标识）
+
+### 修改
+
+- `WebHomeExtensionRegistry.loadRemote`：远程扩展 URL 先经 `GitRawUrlResolver` 转成 raw 地址再加载
+
+### 说明
+
+- 纯 Java 工具，无 WebView 依赖；不影响已配置的 raw 地址或直接网址
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.88 — MPV 音频 DSP 完整链路（响度+稳定器+限幅器） (2026-08-12)
 
 在 v5.5.87 响度归一化基础上，补全 MPV 音频 DSP：均衡器 + `loudnorm`（响度）+ `acompressor`（动态稳定/压缩）+ `alimiter`（输出限幅），全部为 ffmpeg/MPV 标准 `af` 滤镜。
