@@ -540,33 +540,44 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
     }
 
     /**
-     * Applies a 10-band peaking equalizer through MPV's legacy {@code equalizer}
-     * audio filter (MPlayer syntax: {@code af=equalizer=f=<Hz>:g=<dB>}, chained
-     * per band). {@code levels} are band gains in the AudioEffectBands range; the
-     * caller converts to dB. When {@code loudness} is true the standard MPV
-     * {@code loudnorm} filter is appended for loudness normalization. An
-     * empty/zero equalizer with loudness off clears the {@code af} chain.
+     * Applies MPV audio DSP through the {@code af} property: a 10-band peaking
+     * equalizer, optional {@code loudnorm} (loudness), {@code acompressor}
+     * (stabilizer) and {@code alimiter} (limiter). Filters are appended in a
+     * comma-separated chain; all are well-known ffmpeg/MPV filters. {@code levels}
+     * are band gains in dB, {@code compressorGain} is the compressor ratio and
+     * {@code limiter} enables output limiting. An empty chain clears {@code af}.
      */
-    public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb, boolean loudness) {
+    public void setAudioDsp(float[] frequenciesHz, float[] gainsDb, boolean loudness, float compressorRatio, boolean limiter) {
         if (!initialized) return;
-        if (frequenciesHz == null || gainsDb == null || frequenciesHz.length == 0 || frequenciesHz.length != gainsDb.length) {
-            safeSetPropertyString("af", loudness ? "loudnorm" : "");
-            return;
-        }
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < frequenciesHz.length; i++) {
-            if (gainsDb[i] == 0f) continue;
-            if (builder.length() > 0) builder.append(',');
-            formatAfEqualizerBand(builder, frequenciesHz[i], gainsDb[i]);
+        if (frequenciesHz != null && gainsDb != null && frequenciesHz.length > 0 && frequenciesHz.length == gainsDb.length) {
+            for (int i = 0; i < frequenciesHz.length; i++) {
+                if (gainsDb[i] == 0f) continue;
+                if (builder.length() > 0) builder.append(',');
+                formatAfEqualizerBand(builder, frequenciesHz[i], gainsDb[i]);
+            }
         }
-        if (builder.length() > 0 && loudness) builder.append(",loudnorm");
-        else if (builder.length() == 0 && loudness) builder.append("loudnorm");
+        if (loudness) appendAfSegment(builder, "loudnorm");
+        if (compressorRatio > 1.0f) {
+            appendAfSegment(builder, "acompressor=threshold=0.125:ratio=" + formatAfDouble(compressorRatio) + ":attack=20:release=250");
+        }
+        if (limiter) appendAfSegment(builder, "alimiter=limit=0.98:attack=5:release=50");
         safeSetPropertyString("af", builder.toString());
     }
 
-    /** @deprecated use {@link #setAudioEqualizer(float[], float[], boolean)}. */
+    /** @deprecated use {@link #setAudioDsp(float[], float[], boolean, float, boolean)}. */
+    public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb, boolean loudness) {
+        setAudioDsp(frequenciesHz, gainsDb, loudness, 1.0f, false);
+    }
+
+    /** @deprecated use {@link #setAudioDsp(float[], float[], boolean, float, boolean)}. */
     public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb) {
-        setAudioEqualizer(frequenciesHz, gainsDb, false);
+        setAudioDsp(frequenciesHz, gainsDb, false, 1.0f, false);
+    }
+
+    private static void appendAfSegment(StringBuilder builder, String segment) {
+        if (builder.length() > 0) builder.append(',');
+        builder.append(segment);
     }
 
     private static void formatAfEqualizerBand(StringBuilder builder, float frequencyHz, float gainDb) {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.5.88 — MPV 音频 DSP 完整链路（响度+稳定器+限幅器） (2026-08-12)
+
+在 v5.5.87 响度归一化基础上，补全 MPV 音频 DSP：均衡器 + `loudnorm`（响度）+ `acompressor`（动态稳定/压缩）+ `alimiter`（输出限幅），全部为 ffmpeg/MPV 标准 `af` 滤镜。
+
+### 修改
+
+- `MpvPlayer.setAudioEqualizer` → 重构为 `setAudioDsp(freq, gainDb, loudness, compressorRatio, limiter)`，按需在 `af` 链追加 `loudnorm`/`acompressor`/`alimiter`；旧方法保留并委托
+- `MpvPlayerEngine.applyAudioSetting`：`getStabilityAmount()` 映射为压缩比（1 + 稳定度×2.5），`shouldLimitOutput()` 启用限幅
+
+### 说明
+
+- **默认关闭** → 默认用户 `af` 链与均衡器时代完全一致，零行为变化；仅开启相应音效时才追加对应滤镜
+- `safeSetPropertyString` 静默吞异常：即使打包的 MPV 不支持某滤镜也只不生效，不崩溃
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.87 — MPV 音频响度归一化（loudnorm） (2026-08-12)
 
 为 MPV 内核补充音频 DSP 的第一步：开启响度归一化时，在 `af` 滤镜链末尾追加标准的 `loudnorm` 滤镜（默认关闭，不影响默认用户）。
