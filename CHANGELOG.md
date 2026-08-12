@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.5.93 — WebHome 集成（Step4：宿主真实视口） (2026-08-12)
+
+WebHome 集成专项**第四步**：宿主从窗口 insets 构建**真实安全区视口**并注入 WebHome 页面（此前视口为 EMPTY）。
+
+### 修改
+
+- mobile `VodFragment`：`ViewCompat.setOnApplyWindowInsetsListener` 监听窗口 insets，构建 `WebHomeViewport.from(insets, mode, 0)`（全屏时 chrome 模式为 `immersive`，否则 `normal`）并经 `applyWebHomeViewport` 注入
+
+### 说明
+
+- 本步让 WebHome 页面获得**真实的安全区/状态栏信息**（`--fm-safe-*`/`--fm-chrome-mode` 等 CSS 变量），配合 Step2/3 的视口管道
+- 仅读取 insets，不做系统栏隐藏操作，安全非破坏
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.92 — WebHome 集成（Step3：视口管道） (2026-08-12)
 
 WebHome 集成专项**第三步**：补全视口管道，让宿主可向 WebHome 控制器喂入视口数据（实际安全区/chrome 信息）。

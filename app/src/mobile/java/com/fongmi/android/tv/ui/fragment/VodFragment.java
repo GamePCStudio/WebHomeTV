@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.core.view.ViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewpager.widget.PagerAdapter;
@@ -50,6 +51,7 @@ import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.web.HomeWebController;
+import com.fongmi.android.tv.web.WebHomeChrome;
 import com.fongmi.android.tv.web.WebHomeViewport;
 
 import org.greenrobot.eventbus.EventBus;
@@ -96,6 +98,10 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         EventBus.getDefault().register(this);
         mBinding.title.setSelected(true);
         mHomeWebTopMargin = ((ViewGroup.MarginLayoutParams) mBinding.homeWeb.getLayoutParams()).topMargin;
+        ViewCompat.setOnApplyWindowInsetsListener(mBinding.getRoot(), (v, insets) -> {
+            applyWebHomeViewport(WebHomeViewport.from(insets, mWebFullscreen ? WebHomeChrome.IMMERSIVE : WebHomeChrome.NORMAL, 0));
+            return insets;
+        });
         setRecyclerView();
         setWebView();
         setViewModel();
