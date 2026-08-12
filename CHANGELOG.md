@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.5.91 — WebHome 集成（Step2：视口注入 + chrome 管道） (2026-08-12)
+
+WebHome 集成专项**第二步**：把简化版 `fmviewport` 注入升级为 `WebHomeViewport` 驱动的丰富协议，并加入 `normalChrome`/`setChrome`/`restoreChrome` 管道。
+
+### 修改
+
+- `HomeWebController` 新增 `viewport`/`lastViewportKey` 字段
+- `injectViewport()`：改用 `viewport.script(...)`（安全区/手势区/chrome 模式 CSS 变量 + `fmviewport` 事件），并加 key 去重
+- 新增 `setChrome(JsonObject)` / `restoreChrome()` / `normalChrome()`（经 `Listener` 钩子，当前为 no-op）
+
+### 说明
+
+- 视口协议更丰富（`--fm-chrome-mode`/`--fm-system-bars-hidden`/手势区等），即使 `viewport` 暂为 EMPTY 也输出完整结构
+- chrome 模式尚未由宿主 Activity 实际应用（Step3）；`Listener` 钩子默认 no-op，现有行为不变
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.90 — WebHome 集成（Step1：chrome/视口基础） (2026-08-12)
 
 WebHome 完整集成专项的**第一步**：移植 chrome 模式与视口（viewport）基础类，并扩展 `HomeWebController.Listener` 接口（非破坏性）。

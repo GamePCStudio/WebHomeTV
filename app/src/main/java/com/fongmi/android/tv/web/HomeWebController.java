@@ -68,6 +68,8 @@ public class HomeWebController {
     private volatile String trustedOrigin = "";
     private long pauseAt;
     private long lastKeyAt;
+    private WebHomeViewport viewport = WebHomeViewport.EMPTY;
+    private String lastViewportKey;
     private boolean sdkReady;
     private boolean paused;
     private volatile boolean trusted;
@@ -572,15 +574,26 @@ public class HomeWebController {
 
     private void injectViewport() {
         if (webView.getWidth() <= 0 || webView.getHeight() <= 0) return;
-        float width = webView.getWidth() / density;
-        float height = webView.getHeight() / density;
-        String script = "(function(){if(!document||!document.documentElement)return;"
-                + "document.documentElement.style.setProperty('--fm-web-width','" + width + "px');"
-                + "document.documentElement.style.setProperty('--fm-web-height','" + height + "px');"
-                + "document.documentElement.style.setProperty('--fm-safe-bottom','0px');"
-                + "window.dispatchEvent(new CustomEvent('fmviewport',{detail:{width:" + width + ",height:" + height + ",safeBottom:0}}));"
-                + "})();";
+        String key = viewport.key(density, webView.getWidth(), webView.getHeight());
+        if (key.equals(lastViewportKey)) return;
+        lastViewportKey = key;
+        String script = viewport.script(density, webView.getWidth(), webView.getHeight());
         webView.post(() -> webView.evaluateJavascript(script, null));
+    }
+
+    public void setChrome(JsonObject payload) {
+        if (payload == null || payload.size() == 0) listener.setChrome(normalChrome());
+        else listener.setChrome(payload);
+    }
+
+    public void restoreChrome() {
+        listener.restoreChrome();
+    }
+
+    private JsonObject normalChrome() {
+        JsonObject object = new JsonObject();
+        object.addProperty("mode", WebHomeChrome.NORMAL);
+        return object;
     }
 
     private String reloadUrl(String url) {
