@@ -539,6 +539,38 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
         safeSetPropertyDouble("hue", hue);
     }
 
+    /**
+     * Applies a 10-band peaking equalizer through MPV's legacy {@code equalizer}
+     * audio filter (MPlayer syntax: {@code af=equalizer=f=<Hz>:g=<dB>}, chained
+     * per band). {@code levels} are band gains in the AudioEffectBands range; the
+     * caller converts to dB. An empty/zero equalizer clears the {@code af} chain.
+     */
+    public void setAudioEqualizer(float[] frequenciesHz, float[] gainsDb) {
+        if (!initialized) return;
+        if (frequenciesHz == null || gainsDb == null || frequenciesHz.length == 0 || frequenciesHz.length != gainsDb.length) {
+            safeSetPropertyString("af", "");
+            return;
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < frequenciesHz.length; i++) {
+            if (gainsDb[i] == 0f) continue;
+            if (builder.length() > 0) builder.append(',');
+            formatAfEqualizerBand(builder, frequenciesHz[i], gainsDb[i]);
+        }
+        safeSetPropertyString("af", builder.toString());
+    }
+
+    private static void formatAfEqualizerBand(StringBuilder builder, float frequencyHz, float gainDb) {
+        // Legacy MPlayer equalizer entry: f=<Hz>:g=<dB> (t defaults to peaking).
+        builder.append("equalizer=f=").append(formatAfDouble(frequencyHz)).append(":g=").append(formatAfDouble(gainDb));
+    }
+
+    private static String formatAfDouble(float value) {
+        long rounded = Math.round(value * 100f);
+        if (rounded % 100 == 0) return String.valueOf(rounded / 100);
+        return String.valueOf(value);
+    }
+
     public PlayerCacheState getCacheState() {
         if (initialized && mediaItem != null) refreshCacheState();
         return new PlayerCacheState(

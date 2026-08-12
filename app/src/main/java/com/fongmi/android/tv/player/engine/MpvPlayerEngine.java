@@ -23,6 +23,8 @@ import com.fongmi.android.tv.player.PlaybackRoute;
 import com.fongmi.android.tv.player.PlaybackTrace;
 import com.fongmi.android.tv.player.exo.ExoUtil;
 import com.fongmi.android.tv.player.exo.TrackUtil;
+import com.fongmi.android.tv.player.effect.audio.AudioEffectBands;
+import com.fongmi.android.tv.player.effect.audio.AudioEffectConfig;
 import com.fongmi.android.tv.player.effect.video.VideoEffectProfile;
 import com.fongmi.android.tv.player.lut.MpvLutShader;
 import com.fongmi.android.tv.player.mpv.MpvConfigStore;
@@ -236,6 +238,32 @@ public class MpvPlayerEngine implements PlayerEngine {
     @Override
     public void clearVideoProfile() {
         player.setVideoEqualizer(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    }
+
+    @Override
+    public boolean supportsAudioSetting() {
+        return true;
+    }
+
+    @Override
+    public boolean applyAudioSetting() {
+        int channelCount = 2;
+        AudioEffectConfig config = AudioEffectConfig.from(AudioEffectBands.STANDARD, channelCount);
+        int count = AudioEffectBands.STANDARD.getCount();
+        float[] frequencies = new float[count];
+        float[] gains = new float[count];
+        short[] levels = config.getLevels();
+        for (int i = 0; i < count; i++) {
+            frequencies[i] = AudioEffectBands.STANDARD.getCenterFrequency(i) / 1000.0f;
+            gains[i] = i < levels.length ? levels[i] / 100.0f : 0f;
+        }
+        player.setAudioEqualizer(frequencies, gains);
+        return true;
+    }
+
+    @Override
+    public void clearAudioEffect() {
+        player.setAudioEqualizer(null, null);
     }
 
     @Override

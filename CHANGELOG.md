@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.5.84 — MPV 内核音频均衡器支持 (2026-08-11)
+
+为 MPV 播放内核补齐音频均衡器（此前仅 EXO 可用）：通过 MPV 原生 `af` 音频滤镜链（MPlayer 经典 `equalizer=f=<Hz>:g=<dB>` 语法）实现与 EXO 同款 10 频段均衡。
+
+### 新增
+
+- `MpvPlayer.setAudioEqualizer(frequenciesHz, gainsDb)`：把频段增益映射为 MPV `af=equalizer=...` 链；全零/空时清空 `af`
+- `MpvPlayerEngine` 覆盖 `supportsAudioSetting()`/`applyAudioSetting()`/`clearAudioEffect()`，复用既有 `AudioEffectConfig`（频段 32Hz–16kHz，增益 dB = level/100）
+
+### 说明
+
+- 仅均衡器频段部分（纯 MPV `equalizer` af，无 LUT 冲突）；响度/稳定/限幅等 DSP 仍走 EXO 路线
+- `af` 为 MPV 标准滤镜语法，设置失败静默（不影响播放）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.83 — 镜像历史重建：CNB 仓库不再膨胀 (2026-08-11)
 
 根治 CNB APK 镜像仓库此前累积到 ~10 GiB 的问题：每次发布改为**孤儿分支重建历史**（只含最新 APK/JSON）并 **force-push** 到 main，历史从 ~600 MB 重新开始，不再随发布单调增长。
