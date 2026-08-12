@@ -199,9 +199,33 @@ public final class PlaybackProgressWriter {
             affected += count;
         }
         if (affected > 0 && !notify) RefreshEvent.history();
+        if (notify) PlaybackEventCollector.get().onHistoryDeleted(input, cid);
         if (affected > 0) return PlaybackProgressApplyResult.deleted(input, resultKey(input), affected);
         if (newer > 0) return PlaybackProgressApplyResult.skipped(input, resultKey(input), "本地记录更新于删除事件");
         return PlaybackProgressApplyResult.skipped(input, resultKey(input), "本地记录不存在");
+    }
+
+    /** Notify listeners (webhook) that a history record was deleted by the user. */
+    public static void notifyDeleted(History history) {
+        if (history == null) return;
+        PlaybackProgressDeleteInput input = new PlaybackProgressDeleteInput();
+        input.cid = history.getCid();
+        input.historyKey = history.getKey();
+        input.siteKey = history.getSiteKey();
+        input.vodId = history.getVodId();
+        input.episodeName = history.getVodRemarks();
+        input.deletedAt = System.currentTimeMillis();
+        PlaybackEventCollector.get().onHistoryDeleted(input, history.getCid());
+    }
+
+    /** Notify listeners (webhook) that all history for a config was cleared. */
+    public static void notifyCleared(int cid) {
+        PlaybackProgressDeleteInput input = new PlaybackProgressDeleteInput();
+        input.cid = cid;
+        input.scope = "all";
+        input.confirm = true;
+        input.deletedAt = System.currentTimeMillis();
+        PlaybackEventCollector.get().onHistoryDeleted(input, cid);
     }
 
     private static boolean matchesFilter(PlaybackProgressDeleteInput input, RemoteSyncConfig filter) {

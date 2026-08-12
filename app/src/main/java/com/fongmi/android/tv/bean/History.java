@@ -16,6 +16,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.impl.Diffable;
+import com.fongmi.android.tv.playback.PlaybackProgressWriter;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.crawler.SpiderDebug;
 import com.google.gson.annotations.SerializedName;
@@ -143,6 +144,7 @@ public class History implements Diffable<History> {
 
     public static void delete(int cid) {
         AppDatabase.get().getHistoryDao().delete(cid);
+        PlaybackProgressWriter.notifyCleared(cid);
     }
 
     public static void cleanExpired() {
@@ -410,6 +412,7 @@ public class History implements Diffable<History> {
     public History delete() {
         AppDatabase.get().getHistoryDao().delete(VodConfig.getCid(), getKey());
         AppDatabase.get().getTrackDao().delete(getKey());
+        PlaybackProgressWriter.notifyDeleted(this);
         return this;
     }
 

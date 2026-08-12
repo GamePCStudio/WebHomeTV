@@ -122,6 +122,30 @@ public class PlaybackRecord {
         return record;
     }
 
+    public static PlaybackRecord deleted(PlaybackProgressDeleteInput input, int cid) {
+        PlaybackRecord record = new PlaybackRecord();
+        if (input == null) return record;
+        input.normalize();
+        if (input.deletedAt <= 0) input.deletedAt = System.currentTimeMillis();
+        record.event = "playback.deleted";
+        record.eventId = UUID.randomUUID().toString();
+        record.timestamp = input.deletedAt;
+        record.deletedAt = input.deletedAt;
+        record.scope = input.isAllScope() ? "all" : input.isSiteScope() ? "site" : "item";
+        record.cid = cid;
+        record.configKey = TextUtils.isEmpty(input.configKey) ? PlaybackConfigIdentity.keyForCid(cid) : input.configKey;
+        record.configName = PlaybackConfigIdentity.nameForCid(cid);
+        record.historyKey = safe(input.historyKey);
+        record.siteKey = safe(input.siteKey);
+        record.siteName = siteName(record.siteKey);
+        record.vodId = safe(input.vodId);
+        record.episodeName = safe(input.episodeName);
+        record.state = "deleted";
+        record.dedupeKey = sha256(join(record.configKey, record.scope, record.historyKey, record.siteKey, record.vodId));
+        record.clientKey = clientKey();
+        return record;
+    }
+
     public PlaybackRecord copyFor(PlaybackFieldPolicy policy) {
         PlaybackRecord record = new PlaybackRecord();
         record.clear();

@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.86 — 播放记录删除事件 Webhook 补全 (2026-08-11)
+
+补全播放记录同步的删除事件上报：此前删除记录**不触发** `playback.deleted` Webhook（Step2 时因 DeleteInput 未就绪而跳过）。现在删除/清空历史记录时向已配置的 Webhook 推送删除事件，配合删除墓碑防止远端复活。
+
+### 新增
+
+- `PlaybackRecord.deleted(input, cid)`：构建删除记录（scope/historyKey/siteKey/vodId + dedupeKey）
+- `PlaybackEventCollector.onHistoryDeleted(input, cid)`：发送删除事件
+- `PlaybackProgressWriter.notifyDeleted(History)` / `notifyCleared(int cid)`：工具方法
+
+### 修改
+
+- `History.delete()`（单条）/ `History.delete(cid)`（批量清空）：删除后触发删除事件 Webhook
+- `PlaybackProgressWriter.deleteInternal`：`notify=true` 时触发 `onHistoryDeleted`
+
+### 说明
+
+- Webhook 仅在已配置且同步开启时发送；删除事件受墓碑保护，远端不会复活已删记录
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.85 — 直播源加载失败提示 + startFlow 判空 (2026-08-11)
 
 排查"直播电视无法加载"：直播源（尤其经 GitHub 代理的源）间歇性失效时，App 此前**静默显示空白**、无任何提示。本次改进：
