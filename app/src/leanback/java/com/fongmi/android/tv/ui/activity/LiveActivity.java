@@ -861,6 +861,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
 
     private void startFlow() {
         if (!LiveSetting.isChange()) return;
+        if (mChannel == null) return;
         if (!mChannel.isLast()) nextLine(true);
     }
 

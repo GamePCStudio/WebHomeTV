@@ -4,7 +4,11 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import android.text.TextUtils;
+
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.LiveApi;
 import com.fongmi.android.tv.bean.Channel;
 import com.fongmi.android.tv.bean.Epg;
@@ -74,8 +78,14 @@ public class LiveViewModel extends ViewModel {
             setTimeZone(item);
             return item;
         }, live::postValue, error -> {
-            if (error instanceof ExtractException) url.postValue(Result.error(error.getMessage()));
-            else live.postValue(new Live());
+            if (error instanceof ExtractException) {
+                url.postValue(Result.error(error.getMessage()));
+            } else {
+                String msg = error == null ? "" : error.getMessage();
+                if (TextUtils.isEmpty(msg)) msg = error == null ? "" : error.getClass().getSimpleName();
+                url.postValue(Result.error(TextUtils.isEmpty(msg) ? App.get().getString(R.string.live_load_failed) : msg));
+                live.postValue(new Live());
+            }
         });
     }
 

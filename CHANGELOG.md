@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.5.85 — 直播源加载失败提示 + startFlow 判空 (2026-08-11)
+
+排查"直播电视无法加载"：直播源（尤其经 GitHub 代理的源）间歇性失效时，App 此前**静默显示空白**、无任何提示。本次改进：
+
+### 修改
+
+- `LiveViewModel.parse`：直播源加载失败时（非 ExtractException 的网络/解析错误）也通过 url 通道 post 出 `Result.error`，让 `LiveActivity.onError` 显示清晰错误提示（新增 `live_load_failed` 字符串，三语言）
+- `LiveActivity.startFlow()`（mobile + leanback）：增加 `mChannel == null` 判空，避免直播源加载失败（尚无选中频道）时 NPE
+
+### 说明
+
+- 直播源本身受网络/代理稳定性影响（如 gh.927223.xyz 等 GitHub 代理间歇 403/超时）；App 侧现在能明确提示"加载失败"，用户可切换到其他可用直播源
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.84 — MPV 内核音频均衡器支持 (2026-08-11)
 
 为 MPV 播放内核补齐音频均衡器（此前仅 EXO 可用）：通过 MPV 原生 `af` 音频滤镜链（MPlayer 经典 `equalizer=f=<Hz>:g=<dB>` 语法）实现与 EXO 同款 10 频段均衡。

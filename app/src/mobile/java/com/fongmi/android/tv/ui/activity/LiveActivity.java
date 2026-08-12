@@ -910,6 +910,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void startFlow() {
         if (!LiveSetting.isChange()) return;
+        if (mChannel == null) return;
         if (!mChannel.isLast()) nextLine(true);
     }
 
