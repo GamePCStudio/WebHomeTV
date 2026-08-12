@@ -14,6 +14,6 @@
     <dependency><groupId>androidx.media3</groupId><artifactId>media3-exoplayer</artifactId><version>1.8.0</version><scope>runtime</scope></dependency>
     <dependency><groupId>androidx.media3</groupId><artifactId>media3-ui</artifactId><version>1.8.0</version><scope>runtime</scope></dependency>
     <dependency><groupId>androidx.media3</groupId><artifactId>media3-effect</artifactId><version>1.8.0</version><scope>runtime</scope></dependency>
-    <dependency><groupId>io.github.peerless2012</groupId><artifactId>ass-kt</artifactId><version>0.5.0</version><scope>runtime</scope></dependency>
+    <dependency><groupId>io.github.peerless2012</groupId><artifactId>ass-kt</artifactId><version>0.5.0-fongmi-fix</version><scope>runtime</scope></dependency>
   </dependencies>
 </project>
