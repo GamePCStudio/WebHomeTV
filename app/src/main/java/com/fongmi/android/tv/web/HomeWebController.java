@@ -420,6 +420,9 @@ public class HomeWebController {
                 super.onPageFinished(view, url);
                 SpiderDebug.log("webhome-webview", "page finished url=%s title=%s", url, view.getTitle());
                 refreshTrust();
+                // A pre-load layout-change injection may have locked the viewport key while
+                // the page was still empty; force a fresh injection now that the page is ready.
+                lastViewportKey = null;
                 injectSdk();
                 focusWebView("page-finished");
                 listener.onWebReady();

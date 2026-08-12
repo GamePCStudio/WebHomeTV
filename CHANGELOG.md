@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.5.96 — WebHome 视口注入修复（真机验证发现） (2026-08-12)
+
+真机验证暴露问题：WebHome 页面加载后 `window.__fmViewport` 为 undefined、`--fm-*` CSS 变量为空。根因：页面加载前的布局变化先用 EMPTY 视口锁定了 `lastViewportKey`，页面加载后 `injectViewport` 因 key 相同被去重跳过，注入从未落到已加载页面。
+
+### 修改
+
+- `HomeWebController.onPageFinished`：页面加载完成后重置 `lastViewportKey = null`，强制对就绪页面重新注入视口
+
+### 说明
+
+- 修复后 WebHome 页面可获得 `window.__fmViewport` 与 `--fm-safe-*`/`--fm-chrome-mode` 等视口信息
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.95 — WebHome 集成（Step6：Raw 适配 + 内嵌点播） (2026-08-12)
 
 WebHome 集成专项**第六步**：移植并接入 `WebHomeRawAdapter`（raw 内容代理）与 `WebHomeInlineVodStore`（内嵌点播）。
