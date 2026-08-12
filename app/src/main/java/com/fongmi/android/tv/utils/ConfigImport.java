@@ -53,7 +53,7 @@ public class ConfigImport {
         }
         int siteCount = Json.safeListElement(object, "sites").size();
         int liveCount = Json.safeListElement(object, "lives").size();
-        String name = !config.getName().isEmpty() ? config.getName() : Json.safeString(object, "notice");
+        String name = !TextUtils.isEmpty(config.getName()) ? config.getName() : Json.safeString(object, "notice");
         if (TextUtils.isEmpty(name)) name = Json.safeString(object, "home");
         return Preview.success(config.getType(), config.getUrl(), TextUtils.isEmpty(name) ? "点播配置" : name, siteCount, liveCount, !Json.safeString(object, "logo").isEmpty(), hasHomePage(object), false, siteCount > 0 ? "导入后可直接使用" : "配置可解析，但未发现站点");
     }
@@ -68,15 +68,15 @@ public class ConfigImport {
                 return Preview.success(config.getType(), config.getUrl(), depots.isEmpty() ? "直播配置仓库（空）" : "直播配置仓库", depots.size(), 0, false, false, true, depots.isEmpty() ? "未发现可用配置入口" : "检测到配置仓库入口");
             }
             int liveCount = Json.safeListElement(object, "lives").size();
-            return Preview.success(config.getType(), config.getUrl(), config.getName().isEmpty() ? "直播配置" : config.getName(), liveCount, 0, false, false, false, liveCount > 0 ? "导入后可直接使用" : "配置可解析，但未发现直播源");
+            return Preview.success(config.getType(), config.getUrl(), TextUtils.isEmpty(config.getName()) ? "直播配置" : config.getName(), liveCount, 0, false, false, false, liveCount > 0 ? "导入后可直接使用" : "配置可解析，但未发现直播源");
         }
         int lines = text.split("\\r?\\n").length;
-        return Preview.success(config.getType(), config.getUrl(), config.getName().isEmpty() ? "直播文本源" : config.getName(), lines, 0, false, false, false, lines > 0 ? "导入后可直接使用" : "直播文本为空");
+        return Preview.success(config.getType(), config.getUrl(), TextUtils.isEmpty(config.getName()) ? "直播文本源" : config.getName(), lines, 0, false, false, false, lines > 0 ? "导入后可直接使用" : "直播文本为空");
     }
 
     private static Preview previewWall(Config config) {
         String url = config.getUrl();
-        String label = config.getName().isEmpty() ? "壁纸配置" : config.getName();
+        String label = TextUtils.isEmpty(config.getName()) ? "壁纸配置" : config.getName();
         if (url.startsWith("file") && !Path.exists(Path.local(url))) return Preview.error(config.getType(), url, "本地文件不存在");
         return Preview.success(config.getType(), url, label, 1, 0, false, false, false, "导入后将直接用于壁纸");
     }

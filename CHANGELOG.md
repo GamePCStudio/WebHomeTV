@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.5.97 — 配置导入 NPE 修复（真机验证发现） (2026-08-12)
+
+真机验证暴露：清数据后重新添加接口配置时，`ConfigImport.preview*` 对可能为 null 的 `config.getName()` 调用 `.isEmpty()` → NullPointerException → "导入校验失败"。
+
+### 修改
+
+- `ConfigImport.previewVod/previewLive/previewWall`：将 `config.getName().isEmpty()` 全部改为 `TextUtils.isEmpty(config.getName())`（对 null 安全）
+
+### 说明
+
+- `Config.create(type, url)` 不设置 name，重新添加接口时 name 为 null 触发此 bug
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.96 — WebHome 视口注入修复（真机验证发现） (2026-08-12)
 
 真机验证暴露问题：WebHome 页面加载后 `window.__fmViewport` 为 undefined、`--fm-*` CSS 变量为空。根因：页面加载前的布局变化先用 EMPTY 视口锁定了 `lastViewportKey`，页面加载后 `injectViewport` 因 key 相同被去重跳过，注入从未落到已加载页面。
