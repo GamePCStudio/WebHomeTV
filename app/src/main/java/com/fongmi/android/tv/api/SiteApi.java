@@ -16,6 +16,7 @@ import com.fongmi.android.tv.player.Source;
 import com.fongmi.android.tv.utils.FamilyFilter;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
+import com.fongmi.android.tv.web.WebHomeInlineVodStore;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
@@ -112,6 +113,7 @@ public class SiteApi {
     @NonNull
     public static Result detailContent(@NonNull String key, @NonNull String id) throws Exception {
         SpiderDebug.log("detail", "key=%s,id=%s", key, id);
+        if (WebHomeInlineVodStore.KEY.equals(key)) return WebHomeInlineVodStore.detail(id);
         Site site = VodConfig.get().getSite(key);
         if (site.isEmpty() && PUSH.equals(key)) {
             Vod vod = new Vod();
@@ -143,6 +145,7 @@ public class SiteApi {
     @NonNull
     public static Result playerContent(@NonNull String key, @NonNull String flag, @NonNull String id) throws Exception {
         SpiderDebug.log("player", "key=%s,flag=%s,id=%s", key, flag, id);
+        if (WebHomeInlineVodStore.KEY.equals(key)) return WebHomeInlineVodStore.player(flag, id);
         Site site = VodConfig.get().getSite(key);
         Source.get().stop();
         if (site.getType() == 3) {
