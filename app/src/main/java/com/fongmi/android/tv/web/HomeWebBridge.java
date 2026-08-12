@@ -25,6 +25,7 @@ import com.fongmi.android.tv.utils.FamilyFilter;
 import com.fongmi.android.tv.utils.DependencyTrust;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.web.WebHomeInlineVodStore;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Json;
@@ -119,6 +120,7 @@ public class HomeWebBridge {
                 case "net.resourceUrl" -> quote(resourceUrl(Json.safeString(payload, "url"), payload.toString(), trusted));
                 case "player.playUrl" -> playUrl(payload, trusted);
                 case "player.playVod" -> playVod(payload);
+                case "player.playVodInline" -> playVodInline(payload);
                 case "player.control" -> control(payload);
                 case "player.status" -> status();
                 case "app.search" -> search(payload);
@@ -227,6 +229,33 @@ public class HomeWebBridge {
         String pic = Json.safeString(payload, "pic");
         App.post(() -> VideoActivity.start(activity, siteKey, vodId, title, pic));
         return "{}";
+    }
+
+    private String playVodInline(JsonObject payload) {
+        String vodId = WebHomeInlineVodStore.put(payload, this::resolveInlineEpisode);
+        String title = Json.safeString(payload, "title");
+        if (TextUtils.isEmpty(title)) title = Json.safeString(payload, "vod_name");
+        String pic = Json.safeString(payload, "pic");
+        if (TextUtils.isEmpty(pic)) pic = Json.safeString(payload, "vod_pic");
+        String mark = Json.safeString(payload, "mark");
+        final String playTitle = TextUtils.isEmpty(title) ? vodId : title;
+        final String playPic = pic;
+        final String playMark = mark;
+        SpiderDebug.log("webhome", "player.playVodInline title=%s id=%s mark=%s", playTitle, vodId, playMark);
+        App.post(() -> VideoActivity.start(activity, WebHomeInlineVodStore.KEY, vodId, playTitle, playPic, playMark));
+        JsonObject result = new JsonObject();
+        result.addProperty("siteKey", WebHomeInlineVodStore.KEY);
+        result.addProperty("vodId", vodId);
+        return result.toString();
+    }
+
+    /** Resolves an inline episode to a direct media URL; pageUrl-based resolution is not supported yet. */
+    private JsonObject resolveInlineEpisode(JsonObject payload) {
+        JsonObject result = new JsonObject();
+        String url = Json.safeString(payload, "url");
+        if (TextUtils.isEmpty(url)) url = Json.safeString(payload, "mediaUrl");
+        if (!TextUtils.isEmpty(url)) result.addProperty("url", url);
+        return result;
     }
 
     private String control(JsonObject payload) {

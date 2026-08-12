@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.5.95 — WebHome 集成（Step6：Raw 适配 + 内嵌点播） (2026-08-12)
+
+WebHome 集成专项**第六步**：移植并接入 `WebHomeRawAdapter`（raw 内容代理）与 `WebHomeInlineVodStore`（内嵌点播）。
+
+### 新增
+
+- `web/WebHomeRawAdapter`：WebView raw 内容代理（git 仓库内容经 OkHttp 拉取 + 缓存 + 类型适配），接入 `HomeWebController.shouldInterceptRequest`（加载页面时创建、销毁时清除）
+- `web/WebHomeInlineVodStore`：内嵌点播存储（Vod 内容按 id 存储，供播放器取用）
+
+### 修改
+
+- `HomeWebBridge`：新增 `player.playVodInline` 分发 + `playVodInline`（存内嵌点播并打开播放器）+ 简单 `resolveInlineEpisode`（直接 mediaUrl 的集数可解析）
+- `HomeWebController`：JS 桥暴露 `player.playVodInline`
+
+### 说明
+
+- `WebHomeRawAdapter` 仅对 git 仓库作用域内的 raw 请求生效，不影响其他请求
+- 内嵌点播支持**直接 mediaUrl** 的集数；`pageUrl` 需 JS 集数解析的场景暂优雅降级（后续可补 JS 往返解析）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.94 — WebHome 集成（Step5：openVod 接线） (2026-08-12)
 
 WebHome 集成专项**第五步**：接通 WebHome 页面 → 原生内容的 `openVod` 通道。

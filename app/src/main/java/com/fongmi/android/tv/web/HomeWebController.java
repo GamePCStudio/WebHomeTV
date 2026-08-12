@@ -70,6 +70,7 @@ public class HomeWebController {
     private long lastKeyAt;
     private WebHomeViewport viewport = WebHomeViewport.EMPTY;
     private String lastViewportKey;
+    private WebHomeRawAdapter rawAdapter;
     private boolean sdkReady;
     private boolean paused;
     private volatile boolean trusted;
@@ -122,6 +123,7 @@ public class HomeWebController {
         boolean reload = force || !url.equals(homePage);
         this.site = site;
         this.homePage = url;
+        this.rawAdapter = WebHomeRawAdapter.create(url, site.getHeader());
         prepareExtensions(site);
         registerDocumentStartScripts();
         if (reload) {
@@ -289,6 +291,7 @@ public class HomeWebController {
 
     public void destroy() {
         removeDocumentStartScripts();
+        rawAdapter = null;
         webView.stopLoading();
         webView.destroy();
         if (debugTools) WebView.setWebContentsDebuggingEnabled(false);
@@ -445,7 +448,8 @@ public class HomeWebController {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 listener.onWebRequest(request.getMethod(), request.getUrl().toString(), request.isForMainFrame(), request.getRequestHeaders());
-                return super.shouldInterceptRequest(view, request);
+                WebResourceResponse raw = rawAdapter == null ? null : rawAdapter.intercept(request);
+                return raw == null ? super.shouldInterceptRequest(view, request) : raw;
             }
 
             @Override
@@ -670,6 +674,7 @@ public class HomeWebController {
                   const player={
                     playUrl:(url,title,options)=>invoke('player.playUrl',Object.assign({},options||{},{url,title})),
                     playVod:(siteKey,vodId,title,pic,options)=>invoke('player.playVod',Object.assign({},options||{},{siteKey,vodId,title,pic})),
+                    playVodInline:(payload)=>invoke('player.playVodInline',payload||{}),
                     control:(action)=>invoke('player.control',{action}),
                     status:()=>invoke('player.status',{})
                   };
