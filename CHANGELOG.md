@@ -1,5 +1,24 @@
 # Changelog
 
+## 5.5.90 — WebHome 集成（Step1：chrome/视口基础） (2026-08-12)
+
+WebHome 完整集成专项的**第一步**：移植 chrome 模式与视口（viewport）基础类，并扩展 `HomeWebController.Listener` 接口（非破坏性）。
+
+### 新增
+
+- `web/WebHomeChrome`：chrome 模式（normal/edge/immersive）常量与判定
+- `web/WebHomeViewport`：安全区/手势区/chrome 视口信息构建（JSON/脚本/CSS 注入）
+
+### 修改
+
+- `HomeWebController.Listener` 新增 5 个 default no-op 方法：`applyDefaultChrome`/`setChrome`/`restoreChrome`/`getViewport`/`openVod`（不破坏现有实现者）
+
+### 说明
+
+- 本步为**非破坏性基础**：接口方法均为 default no-op，现有 WebHome 行为不变
+- 后续步骤将接入 chrome()/视口注入，并在宿主 Activity 应用 chrome 模式（edge/immersive）
+- 家庭过滤、ServerAuth、强制签名、targetSdk 37 等安全底线均保留
+
 ## 5.5.89 — WebHome 扩展支持 git 原始地址解析 (2026-08-12)
 
 从 webhtv 移植 `GitRawUrlResolver`（纯 Java URL 解析工具），并接入 WebHome 扩展的远程加载：远程扩展配置里填 `github.com/...`、`cnb.cool/...`、`gitee.com/...` 等 git 仓库地址时，自动解析为 raw 上游地址，扩展清单可正常加载。

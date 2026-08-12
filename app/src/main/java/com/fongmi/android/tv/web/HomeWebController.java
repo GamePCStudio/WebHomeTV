@@ -38,6 +38,8 @@ import com.fongmi.android.tv.utils.WebViewUtil;
 import com.fongmi.android.tv.web.ext.WebHomeExtension;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
 
+import com.google.gson.JsonObject;
+
 import java.io.File;
 import java.net.IDN;
 import java.util.Collections;
@@ -796,6 +798,22 @@ public class HomeWebController {
         void onWebError();
 
         default void setToolbar(boolean visible) {
+        }
+
+        default void applyDefaultChrome(Site site) {
+        }
+
+        default void setChrome(JsonObject payload) {
+        }
+
+        default void restoreChrome() {
+        }
+
+        default WebHomeViewport getViewport() {
+            return WebHomeViewport.EMPTY;
+        }
+
+        default void openVod() {
         }
 
         default void openSetting() {
