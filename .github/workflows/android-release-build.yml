@@ -2,7 +2,7 @@ name: Android Release Build
 
 on:
   push:
-    branches: [WebHomeTV.ASS]
+    branches: [WebHomeTV.ATV]
   workflow_dispatch:
 
 permissions:
