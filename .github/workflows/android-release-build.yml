@@ -57,4 +57,4 @@ jobs:
         with:
           name: webhtv-release-apks
           path: dist/*.apk
-          retention-days: 30
+          retention-days: 1
