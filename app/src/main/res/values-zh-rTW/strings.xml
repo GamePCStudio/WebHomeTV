@@ -959,6 +959,7 @@
     <string name="player_aac_track">AAC優先</string>
     <string name="player_adblock">智慧去廣</string>
     <string name="player_tunnel">隧道模式</string>
+    <string name="player_force_dts_hd_downgrade">強制DTS-HD降級為DTS</string>
     <string name="player_buffer">前向緩衝目標</string>
     <string name="player_buffer_bytes">記憶體緩衝上限</string>
     <string name="player_back_buffer">已播放資料保留</string>

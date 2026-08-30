@@ -323,6 +323,14 @@ public class PlayerSetting {
         if (tunnel) Prefers.put("render", RENDER_SURFACE);
     }
 
+    public static boolean isForceDtsHdDowngrade() {
+        return Prefers.getBoolean("force_dts_hd_downgrade", true);
+    }
+
+    public static void putForceDtsHdDowngrade(boolean forceDtsHdDowngrade) {
+        Prefers.put("force_dts_hd_downgrade", forceDtsHdDowngrade);
+    }
+
     public static boolean isTunnelingEnabled() {
         return isTunnel() && getRender() == RENDER_SURFACE;
     }

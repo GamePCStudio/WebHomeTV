@@ -70,6 +70,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.uaText.setText(Setting.getUa());
         mBinding.aacText.setText(getSwitch(PlayerSetting.isPreferAAC()));
         mBinding.tunnelText.setText(getSwitch(PlayerSetting.isTunnel()));
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
         setPerformanceText();
         setPlayerButtonsText();
         mBinding.adblockText.setText(getSwitch(Setting.isAdblock()));
@@ -120,6 +121,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.autoChange.setOnClickListener(this::setAutoChange);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.tunnel.setOnClickListener(this::setTunnel);
+        mBinding.forceDtsHdDowngrade.setOnClickListener(this::setForceDtsHdDowngrade);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
         mBinding.adblock.setOnClickListener(this::setAdblock);
@@ -360,6 +362,11 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         setPerformanceText();
     }
 
+    private void setForceDtsHdDowngrade(View view) {
+        PlayerSetting.putForceDtsHdDowngrade(!PlayerSetting.isForceDtsHdDowngrade());
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
+    }
+
     private void onPerformance(View view) {
         PlaybackPerformanceDialog.show(this, this::refreshPerformanceSettings);
     }
@@ -371,6 +378,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.playCacheText.setText(playCache[PlayerSetting.getPlayCacheOption()]);
         mBinding.renderText.setText(render[PlayerSetting.getRender()]);
         mBinding.tunnelText.setText(getSwitch(PlayerSetting.isTunnel()));
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
         mBinding.aacText.setText(getSwitch(PlayerSetting.isPreferAAC()));
         mBinding.audioDecodeText.setText(getSwitch(PlayerSetting.isAudioPrefer()));
         mBinding.audioPassThroughText.setText(getSwitch(PlayerSetting.isAudioPassThrough()));
