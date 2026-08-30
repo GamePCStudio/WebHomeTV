@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.BuildConfig;
-import com.fongmi.android.tv.bean.Update;
 import com.fongmi.android.tv.utils.WebViewUtil;
 import com.github.catvod.crawler.DebugLogStore;
 import com.github.catvod.crawler.SpiderDebug;
@@ -153,8 +152,8 @@ public class Setting {
     }
 
     public static int getWall() {
-        int wall = Prefers.getInt("wall", WALL_DREAM_PURPLE);
-        return wall == WALL_GREEN || isLegacyColorWall(wall) ? WALL_DREAM_PURPLE : wall;
+        int wall = Prefers.getInt("wall", WALL_VIOLET_SMOKE);
+        return wall == WALL_GREEN || isLegacyColorWall(wall) ? WALL_VIOLET_SMOKE : wall;
     }
 
     public static void putWall(int wall) {
@@ -174,7 +173,7 @@ public class Setting {
         for (int i = 0; i < DEFAULT_WALLS.length; i++) {
             if (DEFAULT_WALLS[i] == wall) return DEFAULT_WALLS[(i + 1) % DEFAULT_WALLS.length];
         }
-        return WALL_DREAM_PURPLE;
+        return WALL_VIOLET_SMOKE;
     }
 
     public static int[] getDefaultWalls() {
@@ -642,23 +641,6 @@ public class Setting {
     public static void putShellProxyHosts(String hosts) {
         Prefers.put("shell_proxy_hosts", hosts);
         ProxySetting.apply();
-    }
-
-    public static boolean getUpdate() {
-        return Prefers.getBoolean("update", true);
-    }
-
-    public static void putUpdate(boolean update) {
-        Prefers.put("update", update);
-    }
-
-    public static String getUpdateChannel() {
-        String channel = Prefers.getString("update_channel", Update.CHANNEL_STABLE);
-        return Update.CHANNEL_BETA.equals(channel) ? Update.CHANNEL_BETA : Update.CHANNEL_STABLE;
-    }
-
-    public static void putUpdateChannel(String channel) {
-        Prefers.put("update_channel", Update.CHANNEL_BETA.equals(channel) ? Update.CHANNEL_BETA : Update.CHANNEL_STABLE);
     }
 
     public static boolean isAdblock() {
