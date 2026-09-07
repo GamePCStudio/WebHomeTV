@@ -114,6 +114,11 @@ public class VodConfig extends BaseConfig {
     }
 
     @Override
+    protected void clearIfNeeded() {
+        clear();
+    }
+
+    @Override
     protected void load(Config config) throws Throwable {
         String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
         checkJson(config, Json.parse(json).getAsJsonObject());

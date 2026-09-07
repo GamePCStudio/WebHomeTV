@@ -56,11 +56,21 @@ abstract class BaseConfig {
             beforeLoad();
             if (config == null) config = defaultConfig();
             Server.get().start();
+            clearIfNeeded();
             load(config);
             onLoadSuccess();
+            if (config != null && config.equals(this.config)) config.update();
+            if (config != null) App.post(() -> Notify.show(config.getNotice()));
+            postEvent();
         } catch (Throwable e) {
             e.printStackTrace();
+            if (config != null && !TextUtils.isEmpty(config.getUrl())) {
+                App.post(() -> Notify.show(Notify.getError(R.string.error_config_get, e)));
+            }
         }
+    }
+
+    protected void clearIfNeeded() {
     }
 
     protected void postEvent() {
