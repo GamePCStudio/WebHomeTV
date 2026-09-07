@@ -29,6 +29,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.api.config.WallConfig;
+import com.github.catvod.utils.Prefers;
 import com.fongmi.android.tv.bean.Cache;
 import com.fongmi.android.tv.bean.Class;
 import com.fongmi.android.tv.bean.Config;
@@ -135,7 +136,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setTheme(R.style.Theme_App);
+        setTheme(Prefers.getBoolean("splash", false) ? R.style.Theme_Splash : R.style.Theme_App);
         super.onCreate(savedInstanceState);
     }
 
