@@ -23,6 +23,7 @@ import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.ActivityCollectBinding;
+import com.fongmi.android.tv.model.SearchProgress;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteHealthStore;
@@ -166,6 +167,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class).init();
         mViewModel.getSearch().observe(this, this::setCollect);
+        mViewModel.getSearchProgress().observe(this, this::setSearchProgress);
         mViewModel.getResult().observe(this, this::setSearch);
     }
 
@@ -220,6 +222,10 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         mCollectAdapter.add(Collect.create(result.getList()));
         mCollectAdapter.add(result.getList());
         if (mCollectAdapter.getPosition() == 0) addSearchItems(result.getList());
+    }
+
+    private void setSearchProgress(SearchProgress progress) {
+        if (progress != null) mCollectAdapter.setProgress(progress.current(), progress.total());
     }
 
     private void setSearch(Result result) {

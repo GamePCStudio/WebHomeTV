@@ -9,4 +9,5 @@
     android:focusableInTouchMode="true"
     android:textColor="@color/text"
     android:textSize="16sp"
+    android:gravity="center"
     tools:text="電影" />

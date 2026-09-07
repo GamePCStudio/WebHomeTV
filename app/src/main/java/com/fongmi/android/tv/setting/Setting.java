@@ -156,7 +156,7 @@ public class Setting {
     }
 
     public static int getWall() {
-        int wall = Prefers.getInt("wall", WALL_DREAM_PURPLE);
+        int wall = Prefers.getInt("wall", WALL_VIOLET_SMOKE);
         return wall == WALL_GREEN || isLegacyColorWall(wall) ? WALL_DREAM_PURPLE : wall;
     }
 
