@@ -37,6 +37,7 @@ import androidx.media3.exoplayer.audio.AudioSink;
 import androidx.media3.exoplayer.audio.AudioRendererEventListener;
 import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider;
 import androidx.media3.exoplayer.audio.DefaultAudioSink;
+import androidx.media3.exoplayer.audio.ExoDtsDowngradeAudioOutputProvider;
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo;
 import androidx.media3.exoplayer.mediacodec.MediaCodecAdapter;
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
@@ -783,6 +784,7 @@ public class ExoUtil {
                     speakerChannels,
                     capabilities.getSpeakerLayoutChannelMasks(),
                     capabilities.supportsEncoding(C.ENCODING_AC3));
+            SpiderDebug.log("exo-audio", "dts-downgrade=%s dts=%s dtsHd=%s", PlayerSetting.isForceDtsHdDowngrade(), capabilities.supportsEncoding(C.ENCODING_DTS), capabilities.supportsEncoding(C.ENCODING_DTS_HD));
         }
         ExoCompressedAudioDirectPolicy directPolicy =
                 compressedAudioDirectPolicy == null
@@ -798,9 +800,16 @@ public class ExoUtil {
         DefaultAudioSink.Builder builder = new DefaultAudioSink.Builder(context)
                 .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioOutputPlaybackParameters(
-                        enableAudioOutputPlaybackParams)
-                .setAudioOutputProvider(
-                        directPolicy.wrapOutputProvider(outputProvider));
+                        enableAudioOutputPlaybackParams);
+        if (!passthrough) {
+            builder.setAudioOutputProvider(
+                    directPolicy.wrapOutputProvider(outputProvider));
+        } else {
+            builder.setAudioOutputProvider(
+                    ExoDtsDowngradeAudioOutputProvider.create(
+                            context.getApplicationContext(),
+                            PlayerSetting::isForceDtsHdDowngrade));
+        }
         return builder.build();
     }
 

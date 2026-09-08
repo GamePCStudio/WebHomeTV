@@ -1,7 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">WebHTV</string>
+    <string name="app_name">4K全网影库</string>
 
     <!-- Live -->
     <string name="live_pass">Pass</string>
@@ -1038,6 +1038,7 @@
     <string name="player_aac_track">Prefer aac track</string>
     <string name="player_adblock">Remove ads</string>
     <string name="player_tunnel">Tunnel mode</string>
+    <string name="player_force_dts_hd_downgrade">Force DTS-HD to DTS</string>
     <string name="player_buffer">Forward buffer target</string>
     <string name="player_buffer_bytes">Memory buffer limit</string>
     <string name="player_back_buffer">Played-data retention</string>
