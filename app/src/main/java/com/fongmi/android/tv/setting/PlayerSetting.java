@@ -140,7 +140,7 @@ public class PlayerSetting {
     }
 
     public static int getSize() {
-        return Prefers.getInt("size", 2);
+        return Prefers.getInt("size", 1);
     }
 
     public static void putSize(int size) {
