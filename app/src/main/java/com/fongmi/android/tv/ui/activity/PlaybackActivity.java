@@ -32,6 +32,7 @@ import androidx.media3.ui.PlayerView;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
+import com.fongmi.android.tv.bean.Sub;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.player.PlaybackAutoContext;
 import com.fongmi.android.tv.player.PlaybackServiceReleasePolicy;
@@ -60,6 +61,7 @@ import java.util.function.IntConsumer;
 public abstract class PlaybackActivity extends BaseActivity implements MediaController.Listener, Player.Listener, ServiceConnection {
 
     private static final String SIZE_TAG = "MPV_SIZE";
+    private static final String STATE_PLAYBACK_KEY = "playback:ownershipKey";
 
     private ListenableFuture<MediaController> mControllerFuture;
     private MediaController mController;
@@ -68,6 +70,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean redirect;
     private boolean playbackExiting;
     private String preparedPlaybackKey;
+    private String pinnedPlaybackKey;
     private boolean nativeOutputPending;
     private boolean bound;
     private boolean stop;
@@ -123,7 +126,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         this.redirect = redirect;
         if (mService == null) return;
         if (redirect) mService.clearNavigationCallback(getNavigationCallback());
-        else mService.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
+        else mService.setNavigationCallback(getNavigationCallback(), activePlaybackKey());
     }
 
     protected boolean isPlaybackExiting() {
@@ -149,7 +152,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     protected void updateNavigationKey() {
-        if (mService != null) mService.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
+        if (mService != null) mService.setNavigationCallback(getNavigationCallback(), activePlaybackKey());
     }
 
     protected boolean isAudioOnly() {
@@ -188,8 +191,32 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         return false;
     }
 
+    /**
+     * 本次播放会话的归属令牌。
+     *
+     * <p>{@link #getPlaybackKey()} 由子类从 intent 现算，而 intent 的 id 会在起播之后被
+     * 详情结果改写（TMDB 富集回来的 vodId，见 VideoActivity#updateVod）。播放器里的 key 是
+     * 起播那一刻固化进 PlaySpec 的，之后无从更改；两者一旦不等，{@link #isOwner()} 便永久
+     * 为 false，于是 STATE_READY 不再下发（转圈不收）、每秒的进度采样直接返回（进度不落库、
+     * 刷新回起点）、切集也因 PlaybackService#isNavigationOwner 失配而不派发。
+     *
+     * <p>该 key 的语义是"归属与路由令牌"，必须在一次播放会话内保持稳定；History 行的 key
+     * 迁移是另一件事，二者解耦。因此起播时钉住，会话结束或换集重新起播时再更新。
+     */
+    protected final String activePlaybackKey() {
+        return pinnedPlaybackKey != null ? pinnedPlaybackKey : getPlaybackKey();
+    }
+
+    /**
+     * 丢弃上一次播放会话的归属令牌，让 {@link #activePlaybackKey()} 重新回落到 intent。
+     * 换条目（onNewIntent）时调用：此时旧会话已作废，新会话尚未起播。
+     */
+    protected final void resetPlaybackOwnership() {
+        pinnedPlaybackKey = null;
+    }
+
     protected boolean isOwner() {
-        String key = getPlaybackKey();
+        String key = activePlaybackKey();
         PlayerManager manager = player();
         return key == null || (manager != null && key.equals(manager.getKey()));
     }
@@ -249,7 +276,24 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected void onPlayerRebuilt() {
     }
 
+    /**
+     * The rendered frame is revealed by clearing the shutter in the caller. The
+     * loading spinner deliberately stays up until STATE_READY: a first frame does
+     * not mean playback can proceed, and hiding the spinner here would present a
+     * still-buffering session as a frozen picture. Subclasses own the spinner and
+     * clear it from their own state handling.
+     */
+    protected void onExoFirstFrame() {
+    }
+
     protected void onTracksChanged() {
+    }
+
+    /**
+     * 用户选中了一个外挂字幕。有本地历史语义的子类覆写它把来源记下来，
+     * 好让下次从历史进来时自动挂回同一个字幕。
+     */
+    protected void onSubtitleSelected(Sub sub) {
     }
 
     protected void onTitlesChanged() {
@@ -357,6 +401,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         return PlayerSetting.isBackgroundOff();
     }
 
+    protected boolean shouldAutoPlay() {
+        return PlayerSetting.isAutoPlay();
+    }
+
     protected boolean seekTo(long deltaMs) {
         onSeekStarted();
         long targetMs = Math.max(0, player().getPosition() + deltaMs);
@@ -378,6 +426,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         // 正常情况下 ContentDispatcher 已在更早的汇聚点分流；这里兜底处理漏网的解析结果。
         if (NovelRouter.isReaderUrl(result)) {
             if (NovelRouter.routeReaderEngine(this, result, key, getReaderVod())) return;
+            return;
         }
         if (rejectUnsupportedDrm(key, result)) {
             return;
@@ -389,12 +438,14 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
             onError(ResUtil.getString(R.string.error_play_url));
         } else if (result.needParse() || useParse) {
             preparedPlaybackKey = null;
+            pinnedPlaybackKey = key;
             attachSurface();
-            player().parse(key, result, useParse, metadata, PlayerSetting.isAutoPlay(), startPositionMs);
+            player().parse(key, result, useParse, metadata, shouldAutoPlay(), startPositionMs);
         } else {
             preparedPlaybackKey = null;
+            pinnedPlaybackKey = key;
             attachSurface();
-            player().start(PlaySpec.from(result, key, metadata), timeout, PlayerSetting.isAutoPlay(), startPositionMs);
+            player().start(PlaySpec.from(result, key, metadata), timeout, shouldAutoPlay(), startPositionMs);
         }
         syncKeepScreenOn();
     }
@@ -416,7 +467,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private boolean isSelectedMpvPlayer() {
-        return mService != null ? player().isMpv() : PlayerSetting.getPlayer() == PlayerSetting.MPV;
+        return mService != null ? player().isMpv() : PlayerSetting.getActivePlayer() == PlayerSetting.MPV;
     }
 
     private void bindPlaybackService() {
@@ -478,7 +529,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         MediaItem controllerItem = mController.getCurrentMediaItem();
         String managerMediaId = managerItem == null ? null : managerItem.mediaId;
         String controllerMediaId = controllerItem == null ? null : controllerItem.mediaId;
-        if (!PlaybackStateReconciliation.shouldReplayReady(getPlaybackKey(), preparedPlaybackKey, manager.getKey(), managerMediaId, controllerMediaId, manager.getPlaybackState(), mController.getPlaybackState())) return;
+        if (!PlaybackStateReconciliation.shouldReplayReady(activePlaybackKey(), preparedPlaybackKey, manager.getKey(), managerMediaId, controllerMediaId, manager.getPlaybackState(), mController.getPlaybackState())) return;
         onControllerReadyReconciled();
     }
 
@@ -839,6 +890,20 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         }
 
         @Override
+        public void onExoFirstFrame() {
+            if (!isOwner() || !player().isExo()) return;
+            View shutter = getExoView().findViewById(androidx.media3.ui.R.id.exo_shutter);
+            if (shutter != null) shutter.setVisibility(View.INVISIBLE);
+            getExoView().setShutterBackgroundColor(Color.TRANSPARENT);
+            PlaybackActivity.this.onExoFirstFrame();
+        }
+
+        @Override
+        public void onSubtitleSelected(Sub sub) {
+            if (isOwner()) PlaybackActivity.this.onSubtitleSelected(sub);
+        }
+
+        @Override
         public void onPlayerRebuild(Player player, boolean resetVideoSurface) {
             if (isOwner()) {
                 nativeOutputPending = player().shouldKeepVideoShutterClosed();
@@ -855,6 +920,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected void initView(Bundle savedInstanceState) {
         long start = System.currentTimeMillis();
         super.initView(savedInstanceState);
+        restorePlaybackKey(savedInstanceState);
         if (!shouldBindPlaybackService()) return;
         ExoUtil.setPlayerView(getExoView());
         RealtimeSubtitleController.get().bind(getExoView());
@@ -862,6 +928,20 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         if (deferPlaybackServiceBinding()) bindPlaybackServiceAfterFirstFrame();
         else bindPlaybackService();
         if (SpiderDebug.isEnabled()) SpiderDebug.log("playback-flow", "initView cost=%dms key=%s deferred=%s", System.currentTimeMillis() - start, getPlaybackKey(), deferPlaybackServiceBinding());
+    }
+
+    private void restorePlaybackKey(Bundle savedInstanceState) {
+        if (savedInstanceState == null) return;
+        String key = savedInstanceState.getString(STATE_PLAYBACK_KEY);
+        if (key != null) pinnedPlaybackKey = key;
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (!playbackExiting && pinnedPlaybackKey != null) {
+            outState.putString(STATE_PLAYBACK_KEY, pinnedPlaybackKey);
+        }
     }
 
     @Override
@@ -1009,7 +1089,7 @@ public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
         mService.replaceBinding(this::closePiP);
         mService.setSessionActivity(buildSessionIntent());
         mService.setPlaybackForeground(true);
-        mService.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
+        mService.setNavigationCallback(getNavigationCallback(), activePlaybackKey());
         mService.addPlayerCallback(mPlayerCallback);
         getSeekView().setProgressPlayer(player().getPlayer());
         player().setLutAllowed(isLutAllowed());

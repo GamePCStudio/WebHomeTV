@@ -18,7 +18,18 @@ public class TmdbConfig {
     private static final String DEFAULT_IMAGE_BASE = "https://images.tmdb.org/t/p/w342";
     private static final String DEFAULT_BACKDROP_BASE = "https://images.tmdb.org/t/p/w780";
     private static final String DEFAULT_LANGUAGE = "zh-CN";
-    private static final List<String> DEFAULT_DISABLED_RULES = List.of("[音]", "[听]", "[书]", "[漫]", "[短]");
+    /**
+     * 默认不富集 TMDB 的站点：非影视内容（音频/有声/小说/漫画/短剧/画）加上配置类站点。
+     *
+     * <p>统一写半角括号即可——{@link #normalizeBrackets} 会让同一条规则一并命中
+     * {@code 「设」配置}、{@code 【设】配置} 这些写法，猫源用的正是全角角括号。
+     *
+     * <p>注意 {@code [书]} 与 {@code [小说]}、{@code [漫]} 与 {@code [漫画]} 不可互替：
+     * 匹配是子串包含，{@code [书]} 命中 {@code [书]xxx} 但不命中 {@code [小说]xxx}，
+     * 因为 {@code [小说]} 里 {@code [书} 后面跟的是 {@code 说} 而非 {@code ]}。
+     * {@code 配置} 不带括号，纯文本子串匹配，能命中 {@code 「设」配置}、{@code [配置]xxx}。
+     */
+    private static final List<String> DEFAULT_DISABLED_RULES = List.of("[音]", "[听]", "[书]", "[漫]", "[短]", "[设]", "[画]", "[漫画]", "[小说]", "配置", "[配]");
     private static final Pattern TMDB_SIZE = Pattern.compile("/(?:w\\d+|h\\d+|original)$");
 
     @SerializedName("apiBase")
@@ -257,22 +268,36 @@ public class TmdbConfig {
         for (String value : values) if (!TextUtils.isEmpty(value) && !result.contains(value)) result.add(value);
     }
 
+    /**
+     * 括号写法归一。同一个分类标记在不同源里写作 {@code [音]}、{@code 「音」}、{@code 【音】}——
+     * 猫源全用全角角括号，TVBox 配置多用半角。一条规则该把这些写法都覆盖住，
+     * 否则默认规则对猫源的 57 个站点一条也匹配不上。
+     */
+    private static String normalizeBrackets(String value) {
+        if (TextUtils.isEmpty(value)) return "";
+        return value
+                .replace('「', '[').replace('」', ']')
+                .replace('【', '[').replace('】', ']')
+                .replace('〔', '[').replace('〕', ']')
+                .replace('［', '[').replace('］', ']');
+    }
+
     private static boolean matches(List<String> rules, String value) {
         if (rules == null || TextUtils.isEmpty(value)) return false;
-        String target = value.toLowerCase(Locale.ROOT);
+        String target = normalizeBrackets(value).toLowerCase(Locale.ROOT);
         for (String rule : rules) {
             if (TextUtils.isEmpty(rule)) continue;
-            if (target.contains(rule.trim().toLowerCase(Locale.ROOT))) return true;
+            if (target.contains(normalizeBrackets(rule.trim()).toLowerCase(Locale.ROOT))) return true;
         }
         return false;
     }
 
     private static boolean matchesExact(List<String> rules, String value) {
         if (rules == null || TextUtils.isEmpty(value)) return false;
-        String target = value.trim();
+        String target = normalizeBrackets(value).trim();
         for (String rule : rules) {
             if (TextUtils.isEmpty(rule)) continue;
-            if (target.equalsIgnoreCase(rule.trim())) return true;
+            if (target.equalsIgnoreCase(normalizeBrackets(rule.trim()))) return true;
         }
         return false;
     }

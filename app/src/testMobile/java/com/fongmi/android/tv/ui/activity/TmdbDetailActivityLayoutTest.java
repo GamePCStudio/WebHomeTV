@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -59,11 +60,53 @@ public class TmdbDetailActivityLayoutTest {
                 queryFilter > helper && source.indexOf("shouldSkipRawTmdbQuery(rawTitle, resolution)", queryFilter) > queryFilter);
         int originalSearch = source.indexOf("AutoTmdbMatch match = searchResolvedTmdbMatch(rawTitle, resolution, attempted);", helper);
         int cleaned = source.indexOf("resolver.queryCleanedTitles(request, 4)", originalSearch);
-        int aiFallback = source.indexOf("resolver.resolveWithAiFallback(request)", originalSearch);
+        int aiFallback = source.indexOf("resolver.resolveWithAiFallback(aiRequest)", originalSearch);
         assertTrue("automatic TMDB detail matching must try code-cleaned title candidates before AI fallback",
                 originalSearch > helper && cleaned > originalSearch && aiFallback > cleaned);
         assertTrue("automatic TMDB detail matching must accept exact same-title ties from TMDB search order",
                 exactTie > 0 && source.indexOf("shouldAcceptFirstExactTmdbCandidate(best, second, keyword, sourceVod)", load) > load);
+    }
+
+    @Test
+    public void searchResultKeywordFlowsIntoBothTmdbAutoMatchPaths() throws Exception {
+        String collect = readFlavorJava("leanback", "com", "fongmi", "android", "tv", "ui", "activity", "CollectActivity.java");
+        assertTrue("search result cards must pass the original search keyword to VideoActivity",
+                collect.contains("VideoActivity.collect(this, item.getSiteKey(), item.getId(), item.getName(), pic, getWallPic(), getKeyword());"));
+
+        String mobileFragment = readFlavorJava("mobile", "com", "fongmi", "android", "tv", "ui", "fragment", "CollectFragment.java");
+        assertTrue("mobile search result cards must pass the original search keyword to VideoActivity",
+                mobileFragment.contains("VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), pic, getWallPic(), getKeyword());"));
+
+        String leanbackFragment = readFlavorJava("leanback", "com", "fongmi", "android", "tv", "ui", "fragment", "CollectFragment.java");
+        assertTrue("leanback search result cards must pass the original search keyword to VideoActivity",
+                leanbackFragment.contains("VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic(), null, getKeyword());"));
+
+        for (String flavor : List.of("leanback", "mobile")) {
+            String source = readFlavorJava(flavor, "com", "fongmi", "android", "tv", "ui", "activity", "VideoActivity.java");
+            int keywordGetter = source.indexOf("getSearchKeyword()");
+            int autoMatch = source.indexOf("mTmdbUIAdapter.autoMatch(item.getName(), item, getSearchKeyword())");
+            int extra = source.indexOf("search_keyword");
+
+            assertTrue(flavor + " must read the search keyword from the detail Intent", keywordGetter >= 0 && extra >= 0);
+            assertTrue(flavor + " must pass the search keyword into TMDB auto matching", autoMatch > keywordGetter);
+        }
+    }
+
+    @Test
+    public void independentTmdbDetailUsesSearchKeywordAfterCardNameAndBeforeCleanedAiFallback() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        int getter = source.indexOf("private String getTmdbSearchKeyword()");
+        int match = source.indexOf("private AutoTmdbMatch searchResolvedTmdbMatch(String rawTitle, @Nullable Vod sourceVod)");
+        int card = source.indexOf("searchResolvedTmdbMatch(rawTitle, resolution, attempted)", match);
+        int keyword = source.indexOf("searchResolvedTmdbMatch(rawTitle, searchKeyword,", card);
+        int cleaned = source.indexOf("resolver.queryCleanedTitles(request, 4)", keyword);
+        int ai = source.indexOf("resolver.resolveWithAiFallback(aiRequest)", cleaned);
+
+        assertTrue("independent TMDB detail must read the search keyword extra", getter >= 0 && source.indexOf("search_keyword", getter) > getter);
+        assertTrue("independent TMDB detail must keep card-name matching first", match >= 0 && card > match);
+        assertTrue("independent TMDB detail must try the search keyword after card-name matching", keyword > card);
+        assertTrue("independent TMDB detail must clean titles after search-keyword matching", cleaned > keyword);
+        assertTrue("independent TMDB detail must keep AI as the last fallback", ai > cleaned);
     }
 
     @Test
@@ -360,14 +403,14 @@ public class TmdbDetailActivityLayoutTest {
         String nativeLayout = readLeanbackLayout("view_control_vod_action.xml");
         String fusionLayout = readLayout("activity_tmdb_detail.xml");
         List<String> nativeOrder = List.of("next", "prev", "episodes", "reset", "search", "change2", "fullscreen", "player", "decode", "playParams", "panDiagnostic", "codecCapability", "speed", "scale", "actionQuality", "lut", "karaoke", "immersiveAudio", "text", "audio", "video", "opening", "ending", "danmaku", "adFeedback", "title", "cast", "timer", "repeat");
-        List<String> fusionOrder = List.of("playerNext", "playerPrev", "playerEpisodes", "playerRefresh", "playerChangeSource", "playerFullscreenAction", "playerExternal", "playerDecode", "playerPlayParams", "playerMultiThreadProxy", "playerCodecCapability", "playerSpeed", "playerScale", "playerQuality", "playerLut", "playerParse", "playerDisplay", "playerTextTrack", "playerAudioTrack", "playerVideoTrack", "playerOpening", "playerEnding", "playerDanmaku", "playerAdFeedback", "playerChapter", "playerRepeat");
+        List<String> fusionOrder = List.of("playerNext", "playerPrev", "playerEpisodes", "playerRefresh", "playerChangeSource", "playerSearch", "playerFullscreenAction", "playerExternal", "playerDecode", "playerPlayParams", "playerMultiThreadProxy", "playerCodecCapability", "playerSpeed", "playerScale", "playerQuality", "playerLut", "playerParse", "playerDisplay", "playerTextTrack", "playerAudioTrack", "playerVideoTrack", "playerOpening", "playerEnding", "playerDanmaku", "playerAdFeedback", "playerChapter", "playerRepeat");
 
         assertAndroidIdOrder("native leanback player control order", nativeLayout, nativeOrder);
         assertAndroidIdOrder("fusion inline player control order", fusionLayout, fusionOrder);
         for (String id : List.of("actionParse", "display")) {
             assertFalse("native leanback layout must not expose unbound action " + id, nativeLayout.contains("@+id/" + id));
         }
-        for (String id : List.of("playerSearch", "playerPanDiagnostic", "playerKaraoke", "playerImmersiveAudio", "playerCastAction", "playerTimer")) {
+        for (String id : List.of("playerPanDiagnostic", "playerKaraoke", "playerImmersiveAudio", "playerCastAction", "playerTimer")) {
             assertFalse("fusion layout must not expose unsupported action " + id, fusionLayout.contains("@+id/" + id));
         }
 
@@ -403,12 +446,93 @@ public class TmdbDetailActivityLayoutTest {
         assertTrue("detail inline playback must use the same HLS and AI availability gate as the native player",
                 source.contains("private boolean isInlineAdFeedbackEnabled()")
                         && source.contains("Setting.isAiConfigReady() && Setting.isAdblock() && Setting.isAiAdDetection()")
-                        && source.contains("MediaSourceFactory.isHlsUrl(player().getUrl())"));
+                        && source.contains("PlaybackResourceClassifier.isHlsUrl(player().getUrl())"));
         assertTrue("detail inline playback must submit AI analysis and save confirmed user rules",
                 source.contains("private void submitInlineAdFeedback()")
                         && source.contains("new AiAdDetectionService(config).analyze(request)")
                         && source.contains("AdRulePreviewDialog.create(result).show(this, confirmedResult ->")
                         && source.contains("UserAdRuleStore.add(rule);"));
+    }
+
+    /**
+     * 内嵌快搜靠反射调用两个 flavor 各自的 QuickSearchDialog，编译器管不到。
+     * 任一方法被改名/删掉都会静默退化成"点搜索没反应"，只能在这里钉住契约。
+     */
+    @Test
+    public void inlineQuickSearchReflectionTargetsExistInBothFlavors() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+
+        assertTrue("inline search must reuse the native incremental search stream, not a one-shot dialog",
+                source.contains("inlineSearchModel().searchContent(sites, keyword, true);")
+                        && source.contains("inlineSearchModel().getSearch().observe(this, result ->")
+                        && source.contains("inlineSearchModel().getSearchProgress().observe(this, progress ->"));
+
+        for (String flavor : List.of("leanback", "mobile")) {
+            String dialog = readFlavorJava(flavor, "com", "fongmi", "android", "tv", "ui", "dialog", "QuickSearchDialog.java");
+            assertTrue(flavor + " QuickSearchDialog must keep create() for inline search reflection",
+                    dialog.contains("public static QuickSearchDialog create()"));
+            assertTrue(flavor + " QuickSearchDialog must keep listener(QuickAdapter.OnClickListener) for inline search reflection",
+                    dialog.contains("public QuickSearchDialog listener(QuickAdapter.OnClickListener listener)"));
+            assertTrue(flavor + " QuickSearchDialog must keep items(List<Vod>) for inline search reflection",
+                    dialog.contains("public QuickSearchDialog items(List<Vod> items)"));
+            assertTrue(flavor + " QuickSearchDialog must keep show(FragmentActivity) for inline search reflection",
+                    dialog.contains("public void show(FragmentActivity activity)"));
+            assertTrue(flavor + " QuickSearchDialog must keep addAll(List<Vod>) for incremental inline search results",
+                    dialog.contains("public void addAll(List<Vod> items)"));
+
+            String adapter = readFlavorJava(flavor, "com", "fongmi", "android", "tv", "ui", "adapter", "QuickAdapter.java");
+            assertTrue(flavor + " QuickAdapter must keep OnClickListener.onItemClick(Vod) for the inline search proxy",
+                    adapter.contains("public interface OnClickListener") && adapter.contains("void onItemClick(Vod item);"));
+        }
+
+        String leanbackDialog = readFlavorJava("leanback", "com", "fongmi", "android", "tv", "ui", "dialog", "QuickSearchDialog.java");
+        assertTrue("leanback QuickSearchDialog must keep setProgress for the TV site-progress readout",
+                leanbackDialog.contains("public void setProgress(int current, int total, boolean finished)"));
+
+        String mobileDialog = readFlavorJava("mobile", "com", "fongmi", "android", "tv", "ui", "dialog", "QuickSearchDialog.java");
+        assertTrue("mobile QuickSearchDialog must keep the in-sheet re-search hooks used by inline search",
+                mobileDialog.contains("public interface OnSearchListener")
+                        && mobileDialog.contains("public QuickSearchDialog searchListener(OnSearchListener listener)")
+                        && mobileDialog.contains("public void clear()"));
+
+        assertTrue("inline search proxies must forward Object methods, otherwise hashCode/equals unbox a null",
+                source.contains("if (method.getDeclaringClass() == Object.class) return method.invoke(this, args);"));
+        assertTrue("closing inline search must dismiss the dialog, not just drop the reference",
+                source.contains("invokeQuiet(dialog, \"dismissAllowingStateLoss\", new Class<?>[0]);"));
+        int close = source.indexOf("private void closeInlineSearch()");
+        assertTrue("inline search must clear its dialog reference before dismissing, or onDismiss re-enters closeInlineSearch",
+                close >= 0
+                        && source.indexOf("inlineQuickSearchDialog = null;", close) < source.indexOf("invokeQuiet(dialog, \"dismissAllowingStateLoss\"", close));
+        assertTrue("reloading the detail page must tear down any open inline search",
+                source.indexOf("closeInlineSearch();", source.indexOf("private void resetDetailState()")) > source.indexOf("private void resetDetailState()"));
+    }
+
+    /**
+     * release 开启 minify 后混淆会改掉方法名，反射直接失效并静默退回全局搜索页，
+     * 而 debug 包永远复现不出来 —— 只能靠这里守住 keep 规则。
+     */
+    @Test
+    public void inlineQuickSearchReflectionTargetsSurviveMinification() throws Exception {
+        Path rulesPath = Path.of("app", "proguard-rules.pro");
+        if (!Files.exists(rulesPath)) rulesPath = Path.of("proguard-rules.pro");
+        String rules = new String(Files.readAllBytes(rulesPath), StandardCharsets.UTF_8);
+
+        // -keepclassmembernames implies allowshrinking, so reflection-only methods could still be
+        // removed. The rule must be -keepclassmembers to survive R8.
+        assertTrue("proguard must keep QuickSearchDialog members (not just names) for inline search reflection",
+                rules.contains("-keepclassmembers class com.fongmi.android.tv.ui.dialog.QuickSearchDialog {"));
+        for (String member : List.of("create()", "show(androidx.fragment.app.FragmentActivity)", "addAll(java.util.List)",
+                "clear()", "listener(***)", "items(java.util.List)",
+                "setProgress(int, int, boolean)", "searchListener(***)", "dismissListener(***)")) {
+            assertTrue("proguard QuickSearchDialog keep rule is missing " + member, rules.contains(member));
+        }
+        assertTrue("proguard must keep the inherited dismissAllowingStateLoss reached by inline search reflection",
+                rules.contains("-keepclassmembers class * extends androidx.fragment.app.DialogFragment {")
+                        && rules.contains("public void dismissAllowingStateLoss();"));
+        assertTrue("proguard must keep the QuickAdapter click interface used by the inline search proxy",
+                rules.contains("-keep interface com.fongmi.android.tv.ui.adapter.QuickAdapter$OnClickListener { *; }"));
+        assertTrue("proguard must keep QuickSearchDialog nested listener interfaces used by the inline search proxy",
+                rules.contains("-keep interface com.fongmi.android.tv.ui.dialog.QuickSearchDialog$* { *; }"));
     }
 
     @Test
@@ -447,6 +571,18 @@ public class TmdbDetailActivityLayoutTest {
                 body.contains("if (defaultPlaybackLaunchPending) return;"));
         assertTrue("detail playback must leave the current click/input dispatch before launching VideoActivity",
                 body.contains("ActivityLaunch.postOnAnimation(this, () ->"));
+    }
+
+    @Test
+    public void colorfulDetailDoesNotKeepPlaybackServiceBoundBetweenEpisodeLaunches() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        int method = source.indexOf("protected boolean shouldBindPlaybackService()");
+        int methodEnd = source.indexOf("private ", method + 1);
+        String body = method >= 0 && methodEnd > method ? source.substring(method, methodEnd) : "";
+
+        assertTrue("detail page must decide whether its mode owns an inline player", method >= 0);
+        assertTrue("colorful detail must leave PlaybackService ownership to each standalone VideoActivity",
+                body.contains("return isFusionMode() || isPlayerMode();"));
     }
 
     @Test
@@ -984,13 +1120,13 @@ public class TmdbDetailActivityLayoutTest {
     @Test
     public void episodeDetailDismissRestoresLongPressedCardFocus() throws Exception {
         String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
-        int show = source.indexOf("private void showTmdbEpisodeDetail(Episode episode, int episodeNumber, RecyclerView returnRecycler)");
+        int show = source.indexOf("private void showTmdbEpisodeDetail(Episode episode, int episodeNumber, TmdbEpisode boundTmdbEpisode, RecyclerView returnRecycler)");
         int restore = source.indexOf("private void restoreEpisodeDetailFocus(RecyclerView recycler, Episode episode)", show);
 
         assertTrue("TMDB episode detail must define an exact-card focus restore helper", show >= 0 && restore > show);
         assertTrue("each episode list must provide its own recycler as the focus return target",
-                source.contains("showTmdbEpisodeDetail(episode, episodeNumber, binding.episodeContainer);")
-                        && source.contains("showTmdbEpisodeDetail(episode, episodeNumber, recycler);"));
+                source.contains("showTmdbEpisodeDetail(episode, episodeNumber, tmdbEpisode, binding.episodeContainer);")
+                        && source.contains("showTmdbEpisodeDetail(episode, episodeNumber, tmdbEpisode, recycler);"));
         int dismiss = source.indexOf("OnDismissListener dismissListener", show);
         int movie = source.indexOf("// 电影场景", dismiss);
         String dismissBody = source.substring(dismiss, movie);
@@ -1003,6 +1139,43 @@ public class TmdbDetailActivityLayoutTest {
                 restoreBody.contains("if (!(adapter instanceof TmdbEpisodeAdapter episodeAdapter)) return;")
                         && restoreBody.contains("int position = episodeAdapter.getPosition(episode);")
                         && restoreBody.contains("focusTmdbRecyclerItem(recycler, position);"));
+    }
+
+    @Test
+    public void episodeDetailDismissRepairsInvalidVisibleHoldersBeforeRestoringFocus() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        String recovery = javaBlockAt(source, "private void recoverRecyclerViewIfDetached(");
+        String show = javaBlockAt(source, "private void showTmdbEpisodeDetail(");
+        String dismiss = javaBlockAt(show, "OnDismissListener dismissListener");
+
+        assertTrue("visible cards with pending updates need a real layout so DPAD keys no longer see NO_POSITION",
+                recovery.contains("rv == binding.episodeContainer && rv.hasPendingAdapterUpdates()")
+                        && recovery.contains("if (rv.getChildCount() > 0 && !pendingEpisodeLayout) return;")
+                        && recovery.contains("rv.forceLayout();")
+                        && recovery.contains("v.forceLayout();")
+                        && recovery.contains("root.requestLayout();"));
+        assertTrue("register the one-shot post-layout restore before repairing the stalled layout",
+                dismiss.contains("OneShotPreDrawListener.add(returnRecycler, () -> {")
+                        && dismiss.contains("restoreEpisodeDetailFocus(returnRecycler, episode);")
+                        && dismiss.indexOf("OneShotPreDrawListener.add(") < dismiss.indexOf("recoverEpisodeViewportIfDetached();"));
+        assertTrue("the independent episode panel keeps its existing restore path",
+                dismiss.contains("if (returnRecycler != binding.episodeContainer) {")
+                        && dismiss.contains("returnRecycler.post(() -> restoreEpisodeDetailFocus(returnRecycler, episode));"));
+        assertTrue("dismiss must not steal focus from another button or an already closed activity",
+                dismiss.contains("!returnRecycler.isAttachedToWindow()")
+                        && dismiss.contains("isFinishing() || isDestroyed()")
+                        && dismiss.contains("!returnRecycler.isShown()"));
+        int recyclerFocusStart = source.indexOf("private boolean focusTmdbRecyclerItem(RecyclerView recycler, int position)");
+        int recyclerFocusEnd = source.indexOf("private boolean onDetailEpisodeContainerKey", recyclerFocusStart);
+        String recyclerFocus = recyclerFocusStart >= 0 && recyclerFocusEnd > recyclerFocusStart
+                ? source.substring(recyclerFocusStart, recyclerFocusEnd) : "";
+        assertTrue("restoring an episode card must retry until its ViewHolder is attached and verify requestFocus succeeded",
+                recyclerFocus.contains("recycler.isComputingLayout()")
+                        && recyclerFocus.contains("findViewHolderForAdapterPosition(boundedTarget)")
+                        && recyclerFocus.contains("visibleHolder.itemView.requestFocus()")
+                        && recyclerFocus.contains("requestFocusFromTouch()")
+                        && recyclerFocus.contains("getCurrentFocus() == visibleHolder.itemView")
+                        && recyclerFocus.contains("postOnAnimation(() -> focusTmdbRecyclerItem(recycler, boundedTarget, attempt + 1))"));
     }
 
     @Test
@@ -2085,13 +2258,33 @@ public class TmdbDetailActivityLayoutTest {
                         && containerKeyBody.contains("KeyUtil.isLeftKey(event)")
                         && containerKeyBody.contains("KeyUtil.isRightKey(event)"));
         assertTrue("list-mode DPAD_LEFT should move to the previous episode and consume the first-card boundary",
-                listBody.contains("if (KeyUtil.isLeftKey(event))")
-                        && listBody.contains("if (position <= 0) return true;")
-                        && listBody.contains("return focusDetailEpisode(position - 1);"));
+                 listBody.contains("if (KeyUtil.isLeftKey(event))")
+                         && listBody.contains("if (position <= 0) return true;")
+                         && listBody.contains("return focusDetailEpisode(position - 1);"));
         assertTrue("list-mode DPAD_RIGHT should move to the next episode and consume the last-card boundary",
-                listBody.contains("if (KeyUtil.isRightKey(event))")
-                        && listBody.contains("position >= episodeAdapter.getItemCount() - 1")
-                        && listBody.contains("return focusDetailEpisode(position + 1);"));
+                 listBody.contains("if (KeyUtil.isRightKey(event))")
+                         && listBody.contains("position >= episodeAdapter.getItemCount() - 1")
+                         && listBody.contains("return focusDetailEpisode(position + 1);"));
+    }
+
+    @Test
+    public void detailEpisodeListModeCentersTheFocusedCardLikeNativeEnhanced() throws Exception {
+        String activity = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        String focusChange = javaBlockAt(activity, "private void onDetailEpisodeFocusChange(");
+        String alignFocused = javaBlockAt(activity, "private void alignDetailEpisodeFocusedRow(");
+        String alignHorizontal = javaBlockAt(activity, "private void alignDetailEpisodeFocusedCardHorizontallyNow(");
+
+        assertTrue("list-mode focus changes must schedule the same centered item alignment as native enhanced",
+                focusChange.contains("if (!episodeGridMode)")
+                        && focusChange.contains("alignDetailEpisodeFocusedRow(view, position);"));
+        assertTrue("list-mode episode alignment must use the horizontal layout manager path",
+                alignFocused.contains("LinearLayoutManager.HORIZONTAL")
+                        && alignFocused.contains("alignDetailEpisodeFocusedCardHorizontallyNow(focusedView);"));
+        assertTrue("the focused episode card must be centered within the RecyclerView's usable width",
+                alignHorizontal.contains("binding.episodeContainer.getPaddingLeft()")
+                        && alignHorizontal.contains("binding.episodeContainer.getPaddingRight()")
+                        && alignHorizontal.contains("focusedView.getLeft() + focusedView.getWidth() / 2")
+                        && alignHorizontal.contains("binding.episodeContainer.smoothScrollBy(delta, 0);"));
     }
 
     @Test
@@ -2106,6 +2299,7 @@ public class TmdbDetailActivityLayoutTest {
         String navigationBody = navigation >= 0 && detailRows > navigation ? activity.substring(navigation, detailRows) : "";
         String detailRowsBody = detailRows >= 0 && rowKey > detailRows ? activity.substring(detailRows, rowKey) : "";
         String rowKeyBody = rowKey >= 0 && episodeKey > rowKey ? activity.substring(rowKey, episodeKey) : "";
+        String focusBody = focusItem >= 0 && episodeKey > focusItem ? activity.substring(focusItem, episodeKey) : "";
 
         assertTrue(activityPath + " is missing TMDB horizontal row key helpers",
                 navigation >= 0 && detailRows > navigation && rowKey > detailRows && focusItem > rowKey && episodeKey > focusItem);
@@ -2126,10 +2320,10 @@ public class TmdbDetailActivityLayoutTest {
                         && rowKeyBody.contains("int target = KeyUtil.isLeftKey(event) ? position - 1 : position + 1;")
                         && rowKeyBody.contains("if (target < 0 || target >= adapter.getItemCount()) return true;")
                         && rowKeyBody.contains("focusTmdbRecyclerItem(recycler, target);")
-                        && rowKeyBody.contains("RecyclerView.ViewHolder visibleHolder = recycler.findViewHolderForAdapterPosition(target);")
-                        && rowKeyBody.contains("visibleHolder.itemView.requestFocus();")
-                        && rowKeyBody.contains("recycler.scrollToPosition(target);")
-                        && rowKeyBody.contains("holder.itemView.requestFocus();"));
+                        && focusBody.contains("RecyclerView.ViewHolder visibleHolder = recycler.findViewHolderForAdapterPosition(boundedTarget);")
+                        && focusBody.contains("visibleHolder.itemView.requestFocus()")
+                        && focusBody.contains("recycler.scrollToPosition(boundedTarget);")
+                        && focusBody.contains("postOnAnimation(() -> focusTmdbRecyclerItem(recycler, boundedTarget, attempt + 1)"));
     }
 
     @Test
@@ -2529,10 +2723,23 @@ public class TmdbDetailActivityLayoutTest {
         assertTrue("TV fullscreen playback toggles must keep controls hidden like the native leanback player",
                 activity.substring(toggle, toggleEnd)
                         .contains("if (Util.isLeanback() && inlineFullscreen) hideInlineControls();"));
-        assertTrue("TV inline controls must expose an explicit play/retry action before playback starts",
-                activity.contains("private void toggleInlinePlayback()")
-                        && activity.contains("binding.playerPlaybackAction")
-                        && activity.contains("setButtonEnabled(binding.playerPlaybackAction, true)"));
+        // 控制栏首个按钮必须是"下一集"：原先排在它前面的播放/暂停按钮会拖慢遥控器连播，
+        // 且从未登记进 PlayerButtonSetting 因而设置项管不到，已移除。播放/暂停由上面
+        // expectedEnter 钉住的全屏确认键路径承担，与影视原生控制栏首项为 next 一致。
+        // 钉"第一位"而非"旧 id 不存在"：在"下一集"前插任何新按钮都必须红。
+        String fusionLayout = readLayout("activity_tmdb_detail.xml");
+        String idAttribute = "android:id=\"@+id/";
+        int actionRow = fusionLayout.indexOf(idAttribute + "playerActionRow\"");
+        assertTrue("detail layout must contain playerActionRow", actionRow >= 0);
+        int firstControlId = fusionLayout.indexOf(idAttribute, actionRow + 1);
+        assertTrue("playerActionRow must contain at least one control", firstControlId > actionRow);
+        int firstControlStart = firstControlId + idAttribute.length();
+        String firstControl = fusionLayout.substring(firstControlStart, fusionLayout.indexOf('"', firstControlStart));
+        assertEquals("下一集 must stay the first inline control so the remote reaches it in one press",
+                "playerNext", firstControl);
+        // 匹配用法形态而非裸名字：否则一句提及旧按钮的注释就会误红。
+        assertFalse("removed play/pause action must not be re-wired in the detail activity",
+                activity.contains("binding.playerPlaybackAction"));
         assertTrue("TV inline confirm should enter fullscreen before falling back to the controls overlay",
                 helperBody.contains("if (Util.isLeanback() && canEnterInlineFullscreenOnConfirm())")
                         && helperBody.contains("enterInlineFullscreen();")
@@ -3157,6 +3364,62 @@ public class TmdbDetailActivityLayoutTest {
     }
 
     @Test
+    public void automaticSeasonChoiceRestoresUnboundEpisodeResolution() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        String seasonChoice = source.substring(source.indexOf("public void onSeason(int seasonNumber)"),
+                source.indexOf("private void analyzeTmdbSeasonWithAi"));
+        String clear = source.substring(source.indexOf("private void clearTmdbSeasonBinding"),
+                source.indexOf("private String selectedSeasonFlagKey"));
+
+        assertTrue("automatic choice must leave manual season state before episode re-render",
+                clear.contains("selectedSeasonNumber = -1;")
+                        && clear.indexOf("selectedSeasonNumber = -1;") < clear.indexOf("refreshEpisodesAfterSeasonBinding()"));
+        assertTrue("manual season choice must keep its explicit season selected",
+                seasonChoice.contains("selectedSeasonNumber = seasonNumber;")
+                        && seasonChoice.indexOf("selectedSeasonNumber = seasonNumber;") < seasonChoice.indexOf("refreshEpisodesAfterSeasonBinding()"));
+    }
+
+    @Test
+    public void automaticEpisodeMetadataUsesResolvedFallbackSeason() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        String dataSeason = source.substring(source.indexOf("private int tmdbEpisodeDataSeason"),
+                source.indexOf("private void fetchSeasonIfNeeded(int seasonNumber)"));
+        String episodeDetail = source.substring(source.indexOf("private void showTmdbEpisodeDetail"),
+                source.indexOf("private EpisodePosition historyEpisodePosition"));
+
+        assertTrue("empty auto grouping must reuse the resolver's unique season for episode data",
+                dataSeason.contains("tmdbSeasonChoiceResolution().getSelectedSeason()"));
+        assertTrue("episode detail must use the card mapping and retain the same resolved fallback season as episode data",
+                episodeDetail.contains("int detailSeasonNumber = tmdbEpisodeDataSeason(detailEpisodes);")
+                        && episodeDetail.contains("if (boundTmdbEpisode != null)")
+                        && episodeDetail.contains("boundTmdbEpisode.getSeasonNumber()")
+                        && episodeDetail.contains("int displaySeasonNumber = detailSeasonNumber;")
+                        && episodeDetail.contains("int seasonNumber = detailSeasonNumber;"));
+    }
+
+    @Test
+    public void episodeDetailUsesLongPressedCardMappingForManualSeason() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        String adapter = readJava("com", "fongmi", "android", "tv", "ui", "adapter", "TmdbEpisodeAdapter.java");
+        String detail = source.substring(source.indexOf("private void showTmdbEpisodeDetail"),
+                source.indexOf("private EpisodePosition historyEpisodePosition"));
+
+        assertTrue("long press must pass the validated TMDB episode bound to the visible card",
+                adapter.contains("void onItemLongClick(View anchor, Episode item, int episodeNumber, TmdbEpisode tmdbEpisode)")
+                        && adapter.contains("TmdbEpisode boundTmdbEpisode = tmdbEpisode;")
+                        && adapter.contains("listener.onItemLongClick(view, episode, episodeNumber, boundTmdbEpisode);"));
+        assertTrue("episode detail must use the bound card season and episode number",
+                detail.contains("TmdbEpisode boundTmdbEpisode")
+                        && detail.contains("boundTmdbEpisode.getSeasonNumber()")
+                        && detail.contains("boundTmdbEpisode.getNumber()")
+                        && detail.contains("tmdbService.episode(item, seasonNumber, requestEpisodeNumber"));
+        assertTrue("unmapped cards and API failures must still open a source detail dialog",
+                detail.contains("if (boundTmdbEpisode == null)")
+                        && detail.contains("EpisodeDetailDialog.show(this, episode, getSite(), null, null, dismissListener);")
+                        && detail.contains("if (!isTmdbEpisodeDetailSeasonCurrent(displaySeasonNumber)) return;"));
+    }
+
+    @Test
     public void manualSeasonBindingClearsOnlySelectedFlagMetadata() throws Exception {
         String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
         String clear = source.substring(source.indexOf("private void clearBoundTmdbEpisodeMetadata"),
@@ -3165,6 +3428,49 @@ public class TmdbDetailActivityLayoutTest {
         assertTrue(clear.contains("selectedFlag.getEpisodes()"));
         assertFalse("manual remapping must preserve metadata already loaded for sibling flags",
                 clear.contains("vod.getFlags()"));
+    }
+
+    @Test
+    public void explicitFlagSelectionPersistsIndependentlyOfPlaybackProgress() throws Exception {
+        String source = readJava("com", "fongmi", "android", "tv", "ui", "activity", "TmdbDetailActivity.java");
+        String initial = javaBlockAt(source, "private Flag findInitialFlag(");
+        String preferred = javaBlockAt(source, "private Flag findPreferredFlag(");
+        String save = javaBlockAt(source, "private void savePreferredFlag(");
+        String bindFlags = javaBlockAt(source, "private void bindFlags(");
+        String switchInline = javaBlockAt(source, "private void switchNativeEnhancedInlineFlag(");
+        String updateHistory = javaBlockAt(source, "private void updateInlineHistory(");
+
+        // 线路偏好必须独立落盘：History.vodFlag 只在起播且 position>0 时才写，
+        // 详情直放模式下「切了线路没起播」或「从播放器返回后再切」都写不进去，
+        // 进程被杀后重进就会退回 flags.get(0)。
+        assertTrue("explicit flag taps must persist the selection without waiting for playback",
+                bindFlags.contains("savePreferredFlag(flag)"));
+        assertTrue("native enhanced inline flag switches must persist the selection too",
+                switchInline.contains("savePreferredFlag(flag)"));
+        assertTrue("starting playback must refresh the preference so cross-line resume cannot leave it stale",
+                updateHistory.contains("savePreferredFlag(selectedFlag)"));
+
+        assertTrue("the persisted preference must be consulted when resolving the initial flag",
+                initial.contains("findPreferredFlag(flags)"));
+        assertTrue("season preload must resolve the flag the same way or it prefetches the wrong season",
+                javaBlockAt(source, "private Flag initialStandaloneFlag(").contains("findPreferredFlag(flags)"));
+        assertTrue("an explicit intent target must still outrank the stored preference",
+                initial.indexOf("TmdbUIAdapter.selectPlaybackFlag(") < initial.indexOf("findPreferredFlag("));
+        assertTrue("the stored preference must outrank the history fallback and the flags.get(0) default",
+                initial.indexOf("findPreferredFlag(") < initial.indexOf("history.getSourceBindingKey()")
+                        && initial.indexOf("findPreferredFlag(") < initial.indexOf("flags.get(0)"));
+
+        assertTrue("preference lookup must key off the stable flag key to separate same-named lines",
+                preferred.contains("TmdbUIAdapter.flagKey(flags.get(i), i)"));
+        assertTrue("preference lookup must degrade to the flag name when source ordering shifts",
+                preferred.indexOf("TmdbUIAdapter.flagKey(flags.get(i), i)")
+                        < preferred.indexOf("flag.getFlag()"));
+        assertTrue("writes must record both the stable key and the flag name",
+                save.contains("TmdbUIAdapter.flagKey(flag, index)") && save.contains("flag.getFlag()"));
+        assertTrue("an unknown flag index must not be written as a stable key, Flag.stableKey clamps it to #0",
+                save.contains("index < 0 ? \"\" : TmdbUIAdapter.flagKey(flag, index)"));
+        assertTrue("the preference file must be flushed off the main thread",
+                save.contains("Task.execute(() -> FlagPreferenceCache.get().save())"));
     }
 
     private static Path findMainJavaPath() {
@@ -3192,6 +3498,12 @@ public class TmdbDetailActivityLayoutTest {
     private static String readJava(String first, String... more) throws Exception {
         Path sourcePath = findMainJavaPath().resolve(Path.of(first, more));
         return new String(Files.readAllBytes(sourcePath), StandardCharsets.UTF_8);
+    }
+
+    private static String readFlavorJava(String flavor, String first, String... more) throws Exception {
+        Path moduleRelative = Path.of("src", flavor, "java");
+        Path base = Files.exists(moduleRelative) ? moduleRelative : Path.of("app", "src", flavor, "java");
+        return new String(Files.readAllBytes(base.resolve(Path.of(first, more))), StandardCharsets.UTF_8);
     }
 
     private static Path findLeanbackResPath() {
