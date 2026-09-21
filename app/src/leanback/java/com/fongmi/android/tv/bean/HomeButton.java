@@ -104,14 +104,9 @@ public class HomeButton implements Diffable<HomeButton> {
 
     private static String getDefaultButtons() {
         List<String> ids = new ArrayList<>();
-        if (!Setting.isHomeVodAutoLoad()) ids.add("0");
-        ids.add("1");
-        ids.add("2");
-        ids.add("3");
-        ids.add("4");
+        ids.add("0");
         if (!Setting.isHomeHistory()) ids.add("6");
-        ids.add("7");
-        ids.add("9");
+        ids.add("5");
         return TextUtils.join(",", ids);
     }
 
