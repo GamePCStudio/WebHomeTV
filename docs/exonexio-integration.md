@@ -40,18 +40,24 @@ nexio 的官方集成方式是把 media fork 作为 submodule 复合构建（com
 
 ## 修复记录
 
-### 2026-09-21 IEC 直通不生效修复
+### 2026-09-21 第三轮：整体换用 NEXIO Kodi C++ 音频引擎（真 IEC 打包器）
 
-**现象**（logcat，pid 5605）：选择 DTS-HD MA 7.1 音轨后播放报错：
-- `AudioFlinger: not enough memory for AudioTrack size=4194528` → AudioTrack init 失败（status -12 / -20），重试 3 次全败 → `ExoPlaybackException`
-- HAL 层 `audio_hw_primary` 实际已成功打开 DTS-HD 裸流（format=0xc000000, ch=0x063f），硬件路径是通的
+**为什么放弃 N1 伪装方案**：N1 的 `ExoPassthroughAudioSink`（DTS 轨道伪装 + 原始码流直写）在目标设备上验证是错误路线；用户另一台设备上 NEXIO 应用（源码集成）TrueHD 直通成功，证明 NEXIO 的 Kodi C++ 音频引擎是可行路径。
 
-**根因**：初版 NEXIO IEC 集成只在 `ExoUtil` 加了日志，未接入 AudioTrack 构建路径。media3 标准直通缓冲按“250ms × DTS-HD 4 倍系数 × 码率”计算，DTS-HD MA 18Mbps → 2.25MB → AudioFlinger 页对齐分配 4MB，内存受限的 Amlogic 盒子直接 ENOMEM。
+**本轮改动**：
+1. **vendored Java 侧**（`app/src/main/java/androidx/media3/`）：从 nexio media（e9297c15）原样移植 `exoplayer/audio/kodi/` 包（KodiNativeAudioSink、KodiTrueHdNativeAudioSink、KodiTrueHdEntryAudioSink + validation 运行时）、`RendererClockAwareAudioSink`、`common/util/AmazonQuirks`。包名不变 → JNI 符号匹配。
+2. **fongmi 1.11 适配**：三个 sink 增补 `configure(AudioSinkConfig)` 覆写（fongmi 的 ForwardingAudioSink 会绕过 legacy 路由）；`AudioCapabilities.is*` 静态调用改指 `AmazonQuirks.is*`。
+3. **native 预编译**（`third_party/nexio-native/`）：从 nexio v0.58 release APK 提取 `libkodiCppAudioSinkJNI.so` 及其 FFmpeg 依赖（avcodec/avformat/avfilter/avutil/swresample）双 ABI；DT_NEEDED 全部自洽，无 libc++_shared/mbedtls 额外依赖。
+4. **接线**（`ExoUtil.buildAudioSink`）：IEC 开关开启时 → 设置 AmazonQuirks 全套 IEC packer 默认（AC3/E-AC3/DTS/DTS-HD/TrueHD 直通全开、转码关）→ 返回 `KodiTrueHdEntryAudioSink.create(baselineDefaultSink, trueHdDefaultSink)`；TrueHD 走 `KodiTrueHdNativeAudioSink`（MAT/IEC 打包），DTS/DTS-HD 走 `KodiNativeAudioSink`（真 IEC 61937 打包，不再有 4MB AudioTrack 分配问题），其余格式原样 DefaultAudioSink。
+5. 上一轮的 `ExoNexioPassthroughSink`（N1 移植）删除；`ExoCompressedAudioDirectPolicy` 的 builder 层封顶保留（标准直通路径仍受益）。
 
-**修复**（`ExoCompressedAudioDirectPolicy.applyNexioIecPassthrough`）：
-1. 压缩直通 AudioTrack 缓冲封顶 512KB（约 227ms@18Mbps，Kodi IEC 同量级），避开 4MB 分配失败
-2. TrueHD 在 Amlogic 上无原生编码 AudioTrack 支持：把 AudioFormat 标签改为 DTS（HAL 内容嗅探真实码流），复用 N1 分支 ExoPassthroughAudioSink 的同款方案
-3. 接入点为 `AudioTrackAudioOutputProvider.Builder.setAudioTrackBuilderModifier`（`build()` 前最后一改），vendor-direct 路径行为不变
+### 2026-09-21 第二轮：builder 层修复（已被第三轮取代）
+
+logcat 确认：TrueHD 在 EDID 协商阶段就被判不支持 → 解码成 PCM（17:02:36/48 两次 PCM 8ch 轨道）；DTS-HD 直通 AudioTrack 请求 2250000 字节 → AudioFlinger 4MB 分配 ENOMEM ×3 → 播放中断。builder 层补丁无法触及协商阶段，且被默认关闭的开关挡住。
+
+### 2026-09-21 第一轮：初始集成
+
+初版 NEXIO IEC 集成只在 `ExoUtil` 加了日志，未接入 AudioTrack 构建路径。
 
 ## 后续升级路径（可选）
 

@@ -86,6 +86,8 @@ android {
 
     // ASS rendering is part of normal builds; package the matching prebuilt ABI.
     sourceSets.main.jniLibs.srcDir(rootProject.file('third_party/exo-ass-native/prebuilt'))
+    // WebHomeTV.ExoNexio: NEXIO Kodi C++ audio sink (IEC 61937 / MAT packer) + its FFmpeg deps.
+    sourceSets.main.jniLibs.srcDir(rootProject.file('third_party/nexio-native'))
 
     signingConfigs {
         release {

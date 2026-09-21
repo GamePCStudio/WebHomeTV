@@ -25,8 +25,10 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.TrackSelectionParameters;
 import androidx.media3.common.Tracks;
+import androidx.media3.common.util.AmazonQuirks;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
+import androidx.media3.exoplayer.audio.kodi.KodiTrueHdEntryAudioSink;
 import androidx.media3.exoplayer.DecoderReuseEvaluation;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.LoadControl;
@@ -72,6 +74,7 @@ import com.fongmi.android.tv.player.lut.LutSetting;
 import com.fongmi.android.tv.player.track.LangUtil;
 import com.fongmi.android.tv.setting.ExoPerformanceSetting;
 import com.fongmi.android.tv.setting.ExoFrameSchedulingExperimentSetting;
+import com.fongmi.android.tv.setting.NexioPlayerSettings;
 import com.fongmi.android.tv.setting.PlaybackExperimentSetting;
 import com.fongmi.android.tv.setting.PlaybackPerformanceCatalog;
 import com.fongmi.android.tv.setting.PlaybackPerformanceSetting;
@@ -861,13 +864,24 @@ public class ExoUtil {
                 .setAudioOutputProvider(
                         ExoDiagnosticAudioOutput.provider(directPolicy.wrapOutputProvider(outputProvider, diagnostics), diagnostics));
         DefaultAudioSink sink = builder.build();
-        // WebHomeTV.ExoNexio fork: intercept TrueHD/DTS/DTS-HD at configure()
-        // time (Kodi-style IEC raw bitstream route). The builder-level tweaks
-        // cannot see TrueHD on boxes whose EDID hides it (Media3 decodes to
-        // PCM during negotiation), so the sink must own the decision.
+        // WebHomeTV.ExoNexio fork: NEXIO Kodi C++ audio sink route (real IEC 61937 / MAT
+        // packer, the same code path that works in the NEXIO app on this platform).
+        // TrueHD goes through KodiTrueHdNativeAudioSink (DTS-masked raw bitstream via HAL
+        // sniffing is NOT used), DTS/DTS-HD go through KodiNativeAudioSink with a real IEC
+        // pipeline; everything else delegates to the untouched DefaultAudioSink.
         if (ExoNexioIntegration.isIecPassthroughEnabled()) {
-            ExoNexioIntegration.log("iec passthrough sink wrapper installed");
-            return new ExoNexioPassthroughSink(sink);
+            AmazonQuirks.setExperimentalFireOsIecPassthroughEnabled(true);
+            AmazonQuirks.setFireOsCompatibilityFallbackEnabled(NexioPlayerSettings.isFireOsFallbackEnabled());
+            // NEXIO PlayerSettings defaults: all packer codecs passthrough on, transcode off.
+            AmazonQuirks.setIecPackerAc3PassthroughEnabled(true);
+            AmazonQuirks.setIecPackerAc3TranscodeEnabled(false);
+            AmazonQuirks.setIecPackerEac3PassthroughEnabled(true);
+            AmazonQuirks.setIecPackerDtsPassthroughEnabled(true);
+            AmazonQuirks.setIecPackerTruehdPassthroughEnabled(true);
+            AmazonQuirks.setIecPackerDtshdPassthroughEnabled(true);
+            AmazonQuirks.setIecPackerDtshdCoreFallbackEnabled(true);
+            ExoNexioIntegration.log("nexio kodi cpp audio sink installed (truehd + dts iec)");
+            return KodiTrueHdEntryAudioSink.create(sink, builder.build());
         }
         return ExoDiagnosticAudioOutput.sink(sink, diagnostics);
     }
