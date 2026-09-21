@@ -295,7 +295,7 @@ public class PlayerSetting {
     }
 
     public static int getSize() {
-        return Prefers.getInt("size", 2);
+        return Prefers.getInt("size", 0);
     }
 
     public static void putSize(int size) {
@@ -429,12 +429,12 @@ public class PlayerSetting {
     }
 
     public static int getFailureFallback() {
-        int mode = Prefers.getInt(KEY_FAILURE_FALLBACK, FALLBACK_FULL);
-        return mode >= FALLBACK_FULL && mode <= FALLBACK_DISABLED ? mode : FALLBACK_FULL;
+        int mode = Prefers.getInt(KEY_FAILURE_FALLBACK, FALLBACK_DECODE_ONLY);
+        return mode >= FALLBACK_FULL && mode <= FALLBACK_DISABLED ? mode : FALLBACK_DECODE_ONLY;
     }
 
     public static void putFailureFallback(int mode) {
-        Prefers.put(KEY_FAILURE_FALLBACK, mode >= FALLBACK_FULL && mode <= FALLBACK_DISABLED ? mode : FALLBACK_FULL);
+        Prefers.put(KEY_FAILURE_FALLBACK, mode >= FALLBACK_FULL && mode <= FALLBACK_DISABLED ? mode : FALLBACK_DECODE_ONLY);
     }
 
     public static boolean isAutoPlay() {
@@ -525,7 +525,7 @@ public class PlayerSetting {
 
     public static boolean isDisplaySize() {
         migrateLegacyOsd();
-        return Prefers.getBoolean(KEY_DISPLAY_SIZE, true);
+        return Prefers.getBoolean(KEY_DISPLAY_SIZE, false);
     }
 
     public static void putDisplaySize(boolean displaySize) {
@@ -534,7 +534,7 @@ public class PlayerSetting {
 
     public static boolean isDisplayProgress() {
         migrateLegacyOsd();
-        return Prefers.getBoolean(KEY_DISPLAY_PROGRESS, true);
+        return Prefers.getBoolean(KEY_DISPLAY_PROGRESS, false);
     }
 
     public static void putDisplayProgress(boolean displayProgress) {
@@ -552,7 +552,7 @@ public class PlayerSetting {
 
     public static boolean isDisplayTitle() {
         migrateLegacyOsd();
-        return Prefers.getBoolean(KEY_DISPLAY_TITLE, true);
+        return Prefers.getBoolean(KEY_DISPLAY_TITLE, false);
     }
 
     public static void putDisplayTitle(boolean displayTitle) {

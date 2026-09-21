@@ -461,8 +461,8 @@ public class Setting {
     }
 
     public static int getUiScale() {
-        int scale = Prefers.getInt("ui_scale", UI_SCALE_FOLLOW_SYSTEM);
-        return isUiScale(scale) ? scale : UI_SCALE_FOLLOW_SYSTEM;
+        int scale = Prefers.getInt("ui_scale", UI_SCALE_MORE_COMPACT);
+        return isUiScale(scale) ? scale : UI_SCALE_MORE_COMPACT;
     }
 
     public static void putUiScale(int scale) {
