@@ -15,7 +15,8 @@ public class SiteInjectHomeButtonSourceTest {
         String source = read("app/src/leanback/java/com/fongmi/android/tv/bean/HomeButton.java");
         assertTrue(source.contains("ALL = \"0,1,2,3,4,5,6,7,9\""));
         assertTrue(source.contains("new HomeButton(9, R.string.home_custom_csp)"));
-        assertTrue(source.contains("ids.add(\"9\")"));
+        assertTrue(source.contains("ids.add(\"5\")"));
+        assertTrue(!source.contains("ids.add(\"9\")"));
         assertTrue(!source.contains("home_adblock"));
     }
 
