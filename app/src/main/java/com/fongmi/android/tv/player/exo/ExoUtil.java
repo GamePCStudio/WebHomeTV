@@ -872,6 +872,10 @@ public class ExoUtil {
         if (ExoNexioIntegration.isIecPassthroughEnabled()) {
             AmazonQuirks.setExperimentalFireOsIecPassthroughEnabled(true);
             AmazonQuirks.setFireOsCompatibilityFallbackEnabled(NexioPlayerSettings.isFireOsFallbackEnabled());
+            // FireOS quirk: without delay supervision the native pump never re-issues
+            // AudioTrack.play() after an AudioFlinger underrun-pause, so playback stalls
+            // ~10s every 20-40s (seen on Phicomm X12 / Amlogic HAL, TrueHD 192k IEC).
+            AmazonQuirks.setFireOsIecSuperviseAudioDelayEnabled(true);
             // NEXIO PlayerSettings defaults: all packer codecs passthrough on, transcode off.
             AmazonQuirks.setIecPackerAc3PassthroughEnabled(true);
             AmazonQuirks.setIecPackerAc3TranscodeEnabled(false);

@@ -56,6 +56,8 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
   private static final int TRUEHD_STARTUP_REFILL_MAX_PENDING_BYTES =
       TRUEHD_STARTUP_MIN_SOURCE_BYTES;
   private static final int MAX_TRUEHD_STARTUP_FLUSH_WRITES = 8;
+  // Minimum spacing between repeated (non-transition) TrueHD handoff decision logs.
+  private static final long TRUEHD_DECISION_LOG_MIN_INTERVAL_MS = 5_000;
 
   static {
     System.loadLibrary("kodiCppAudioSinkJNI");
@@ -135,6 +137,8 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
   private boolean lastTrueHdHandoffEligible;
   private boolean lastTrueHdHandoffTriggered;
   @Nullable private String lastTrueHdSelectedPath;
+  @Nullable private String lastTrueHdLoggedStateKey;
+  private long lastTrueHdDecisionLogMs;
   @Nullable private TransportValidationRuntimeRouteSnapshot lastObservedRouteSnapshot;
   @Nullable private TransportValidationRuntimeRouteSnapshot stableTrueHdRouteSnapshot;
 
@@ -967,6 +971,8 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     lastTrueHdHandoffEligible = false;
     lastTrueHdHandoffTriggered = false;
     lastTrueHdSelectedPath = null;
+    lastTrueHdLoggedStateKey = null;
+    lastTrueHdDecisionLogMs = 0L;
   }
 
   private void appendToPendingPassthroughStartupWindow(
@@ -1425,6 +1431,39 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     lastTrueHdSelectedPath = selectedPath;
     lastTrueHdHandoffEligible = handoffEligible;
     lastTrueHdHandoffTriggered = handoffTriggered;
+    // Per-buffer logging here produced a ~400 lines/s logcat flood on the playback thread
+    // (chatty expiry, 4600+ lines/min), which itself contributes to audio thread starvation
+    // on weak boxes. Log only on state TRANSITIONS, throttled.
+    long nowMs = SystemClock.elapsedRealtime();
+    String stateKey =
+        isTrueHdStartupActive()
+            + "/"
+            + trueHdStartupCompleted
+            + "/"
+            + (trueHdStartupProducedOutput || trueHdMeaningfulWriteCount > 0)
+            + "/"
+            + (nativeHandle != 0L && nIsPassthroughStartupReady(nativeHandle))
+            + "/"
+            + lastTrueHdNativeHandoffReady
+            + "/"
+            + lastTrueHdNativeRemainderOwnership
+            + "/"
+            + handoffEligible
+            + "/"
+            + handoffTriggered
+            + "/"
+            + selectedPath;
+    boolean stateChanged = !stateKey.equals(lastTrueHdLoggedStateKey);
+    boolean throttleElapsed = nowMs - lastTrueHdDecisionLogMs >= TRUEHD_DECISION_LOG_MIN_INTERVAL_MS;
+    if (!stateChanged && !throttleElapsed) {
+      return;
+    }
+    if (stateChanged) {
+      lastTrueHdLoggedStateKey = stateKey;
+      lastTrueHdDecisionLogMs = nowMs;
+    } else {
+      lastTrueHdDecisionLogMs = nowMs;
+    }
     Log.i(
         TAG,
         "TrueHD handoff decision"
