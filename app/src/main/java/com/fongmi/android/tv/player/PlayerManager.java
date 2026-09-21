@@ -19,6 +19,7 @@ import androidx.media3.common.Format;
 import androidx.media3.common.MediaEdition;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
+import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.TrackSelectionParameters;
@@ -1736,7 +1737,15 @@ public class PlayerManager implements ParseCallback {
      * source re-open instead of a slow trickle.
      */
     public boolean isPassthroughAudioSwitchStall() {
-        return isExo() && PlayerSetting.isAudioPassThrough(PlayerSetting.EXO);
+        if (!isExo() || !PlayerSetting.isAudioPassThrough(PlayerSetting.EXO)) return false;
+        // Only the DTS-family passthrough path (downgraded DTS core on Amlogic HALs) suffers the
+        // SPDIF re-lock stall. TrueHD plays as 8-channel PCM direct and must NOT reprime: forcing
+        // a seek there re-feeds the cloud source and causes a long freeze instead of a switch.
+        Format selected = getSelectedFormat(getCurrentTracks(), C.TRACK_TYPE_AUDIO);
+        if (selected == null || selected.sampleMimeType == null) return false;
+        String mime = selected.sampleMimeType;
+        return MimeTypes.AUDIO_DTS.equals(mime) || MimeTypes.AUDIO_DTS_HD.equals(mime)
+            || MimeTypes.AUDIO_DTS_EXPRESS.equals(mime) || MimeTypes.AUDIO_DTS_UHD_P2.equals(mime);
     }
 
     public void reprimeAfterPassthroughSwitch() {
