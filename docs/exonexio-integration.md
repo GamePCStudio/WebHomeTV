@@ -38,6 +38,21 @@ nexio 的官方集成方式是把 media fork 作为 submodule 复合构建（com
 - `app/src/main/java/com/fongmi/android/tv/ui/dialog/PlaybackPerformanceDialog.java` — 选项 UI
 - `app/src/main/java/com/fongmi/android/tv/setting/PlaybackPerformanceSetting.java` — `getDv7HandlingMode()` 尊重 NEXIO DV7 默认
 
+## 修复记录
+
+### 2026-09-21 IEC 直通不生效修复
+
+**现象**（logcat，pid 5605）：选择 DTS-HD MA 7.1 音轨后播放报错：
+- `AudioFlinger: not enough memory for AudioTrack size=4194528` → AudioTrack init 失败（status -12 / -20），重试 3 次全败 → `ExoPlaybackException`
+- HAL 层 `audio_hw_primary` 实际已成功打开 DTS-HD 裸流（format=0xc000000, ch=0x063f），硬件路径是通的
+
+**根因**：初版 NEXIO IEC 集成只在 `ExoUtil` 加了日志，未接入 AudioTrack 构建路径。media3 标准直通缓冲按“250ms × DTS-HD 4 倍系数 × 码率”计算，DTS-HD MA 18Mbps → 2.25MB → AudioFlinger 页对齐分配 4MB，内存受限的 Amlogic 盒子直接 ENOMEM。
+
+**修复**（`ExoCompressedAudioDirectPolicy.applyNexioIecPassthrough`）：
+1. 压缩直通 AudioTrack 缓冲封顶 512KB（约 227ms@18Mbps，Kodi IEC 同量级），避开 4MB 分配失败
+2. TrueHD 在 Amlogic 上无原生编码 AudioTrack 支持：把 AudioFormat 标签改为 DTS（HAL 内容嗅探真实码流），复用 N1 分支 ExoPassthroughAudioSink 的同款方案
+3. 接入点为 `AudioTrackAudioOutputProvider.Builder.setAudioTrackBuilderModifier`（`build()` 前最后一改），vendor-direct 路径行为不变
+
 ## 后续升级路径（可选）
 
 若要完整替换为 nexio media 源码：

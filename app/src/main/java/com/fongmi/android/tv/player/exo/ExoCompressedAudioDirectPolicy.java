@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink;
 import androidx.media3.exoplayer.audio.ForwardingAudioOutput;
 import androidx.media3.exoplayer.audio.ForwardingAudioOutputProvider;
 
+import com.fongmi.android.tv.setting.NexioPlayerSettings;
 import com.github.catvod.crawler.SpiderDebug;
 
 import java.nio.ByteBuffer;
@@ -32,6 +33,13 @@ public final class ExoCompressedAudioDirectPolicy
         implements DefaultAudioSink.AudioOffloadSupportProvider {
 
     private static final int VENDOR_DIRECT_BUFFER_SIZE = 256 * 1024;
+    // WebHomeTV.ExoNexio: IEC passthrough caps the AudioTrack allocation for
+    // compressed streams. The media3 default derives 1s+ buffers from the
+    // bitrate (DTS-HD MA @18Mbps -> 2.25MB -> AudioFlinger 4MB allocation),
+    // which fails with ENOMEM on FireOS/Amlogic boxes (see logcat
+    // "not enough memory for AudioTrack"). 512KB keeps ~2.5 DTS-HD frames
+    // while cutting the allocation 8x.
+    private static final int NEXIO_IEC_PASSTHROUGH_BUFFER_SIZE = 512 * 1024;
 
     interface DirectPlaybackSupport {
         boolean isSupported(Format format, AudioAttributes audioAttributes);
@@ -264,16 +272,77 @@ public final class ExoCompressedAudioDirectPolicy
 
     void modifyAudioTrackBuilder(
             AudioTrack.Builder builder, AudioOutputProvider.OutputConfig config) {
-        if (!usesVendorDirect(config)) return;
-        if (SpiderDebug.isEnabled()) {
-            SpiderDebug.log("exo-audio-direct",
-                    "builder encoding=%d sampleRate=%d channelMask=0x%X directSession=0",
-                    config.encoding, config.sampleRate, config.channelMask);
+        if (usesVendorDirect(config)) {
+            if (SpiderDebug.isEnabled()) {
+                SpiderDebug.log("exo-audio-direct",
+                        "builder encoding=%d sampleRate=%d channelMask=0x%X directSession=0",
+                        config.encoding, config.sampleRate, config.channelMask);
+            }
+            builder.setBufferSizeInBytes(VENDOR_DIRECT_BUFFER_SIZE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                builder.setOffloadedPlayback(false);
+            }
+            return;
         }
-        builder.setBufferSizeInBytes(VENDOR_DIRECT_BUFFER_SIZE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            builder.setOffloadedPlayback(false);
+        applyNexioIecPassthrough(builder, config);
+    }
+
+    /**
+     * WebHomeTV.ExoNexio: Kodi-style IEC passthrough support for the standard
+     * passthrough path (NEXIO experimentalDtsIecPassthroughEnabled). Two
+     * adjustments, both mirroring the NEXIO media fork / Amlogic HAL behaviour:
+     * <ul>
+     *   <li>Caps the AudioTrack buffer for compressed streams so allocation
+     *       succeeds on memory-constrained boxes (fixes AudioFlinger -12).</li>
+     *   <li>Relabels TrueHD as DTS so the Amlogic HAL content sniffing accepts
+     *       the raw bitstream (the same trick as the N1 ExoPassthroughAudioSink).</li>
+     * </ul>
+     * No-op when the NEXIO IEC toggle is off.
+     */
+    private void applyNexioIecPassthrough(
+            AudioTrack.Builder builder, AudioOutputProvider.OutputConfig config) {
+        if (!NexioPlayerSettings.isIecPassthroughEnabled()) return;
+        if (config.isTunneling || config.isOffload) return;
+        if (!isIecPassthroughEncoding(config.encoding)) return;
+        if (config.bufferSize > NEXIO_IEC_PASSTHROUGH_BUFFER_SIZE) {
+            if (SpiderDebug.isEnabled()) {
+                SpiderDebug.log("exo-nexio",
+                        "iec passthrough: cap buffer %d -> %d bytes (encoding=%d sampleRate=%d channels=0x%X)",
+                        config.bufferSize, NEXIO_IEC_PASSTHROUGH_BUFFER_SIZE,
+                        config.encoding, config.sampleRate, config.channelMask);
+            }
+            builder.setBufferSizeInBytes(NEXIO_IEC_PASSTHROUGH_BUFFER_SIZE);
         }
+        if (config.encoding == C.ENCODING_DOLBY_TRUEHD) {
+            // Amlogic HAL opens a DTS-labeled raw track and sniffs the actual
+            // bitstream content, so TrueHD passes through despite having no
+            // native encoded AudioTrack label.
+            if (SpiderDebug.isEnabled()) {
+                SpiderDebug.log("exo-nexio",
+                        "iec passthrough: masquerade TrueHD as DTS (sampleRate=%d channelMask=0x%X)",
+                        config.sampleRate, config.channelMask);
+            }
+            builder.setAudioFormat(new AudioFormat.Builder()
+                    .setEncoding(C.ENCODING_DTS)
+                    .setSampleRate(config.sampleRate)
+                    .setChannelMask(config.channelMask)
+                    .build());
+        }
+    }
+
+    private static boolean isIecPassthroughEncoding(int encoding) {
+        return switch (encoding) {
+            case C.ENCODING_AC3,
+                    C.ENCODING_E_AC3,
+                    C.ENCODING_E_AC3_JOC,
+                    C.ENCODING_AC4,
+                    C.ENCODING_DTS,
+                    C.ENCODING_DTS_HD,
+                    C.ENCODING_DTS_HD_MA,
+                    C.ENCODING_DTS_UHD_P2,
+                    C.ENCODING_DOLBY_TRUEHD -> true;
+            default -> false;
+        };
     }
 
     boolean usesVendorDirect(int encoding, int sampleRate, int channelMask) {
