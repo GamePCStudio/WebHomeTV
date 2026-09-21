@@ -33,12 +33,16 @@ public final class NexioPlayerSettings {
     }
 
     /**
-     * NEXIO experimentalDtsIecPassthroughEnabled default = false.
-     * When enabled the compressed audio direct policy prefers the Kodi-style
-     * IEC 61937 packed passthrough route on FireOS/Amlogic boxes.
+     * NEXIO experimentalDtsIecPassthroughEnabled, fork default ON.
+     *
+     * Unlike upstream NEXIO (default off), this fork targets Amlogic/FireOS
+     * TV boxes where TrueHD cannot reach the AudioTrack layer at all (EDID
+     * negotiation) and DTS-HD MA passthrough fails on the media3 default
+     * 4MB AudioTrack allocation. The Kodi-style IEC route is the only working
+     * passthrough path on these devices, so it ships enabled.
      */
     public static boolean isIecPassthroughEnabled() {
-        return Prefers.getBoolean(KEY_IEC_PASSTHROUGH, false);
+        return Prefers.getBoolean(KEY_IEC_PASSTHROUGH, true);
     }
 
     public static void putIecPassthroughEnabled(boolean enabled) {

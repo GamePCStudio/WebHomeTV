@@ -122,7 +122,7 @@ public final class PlaybackPerformanceCatalog {
         options.add(option(SOFT_VIDEO_TUNE, DECODE, "软解降负载", "作用：仅在 EXO 使用 FFmpeg 软解时降低滤波和解码负载。低性能设备/软解视频可开启；硬解4K基本不受影响。代价：积极降负载会牺牲细节，不能替代硬解。"));
         options.add(option(AUDIO_PASSTHROUGH, AUDIO, "音频直通", "作用：把 Dolby/DTS 等压缩音频交给电视或功放解码，保留多声道。设备明确支持且要环绕声才开启；出现无声立即关闭。代价：输出链不支持时不会自动变成可播放音频。"));
         // WebHomeTV.ExoNexio fork: NEXIO-aligned options (github.com/johnneerdael/nexio defaults).
-        options.add(option(NEXIO_IEC_PASSTHROUGH, AUDIO, "NEXIO IEC 直通", "作用：启用 NEXIO（FireOS 移植版 Media3）的 Kodi 式 IEC 61937 打包直通路由，TrueHD/DTS 等在 Amlogic/FireOS 盒子上按内容嗅探直出。默认关闭（与 NEXIO 默认一致）；普通设备保持关闭，FireOS/Amlogic 盒子接功放且标准直通失败时尝试。代价：依赖盒子 HAL 对流内容的检测，不兼容时会无声。"));
+        options.add(option(NEXIO_IEC_PASSTHROUGH, AUDIO, "NEXIO IEC 直通", "作用：启用 NEXIO（FireOS 移植版 Media3）的 Kodi 式 IEC 61937 直通路由：TrueHD（含 Atmos）伪装 DTS 轨道直写裸流，DTS-HD MA 用小缓冲直通，绕过 4MB AudioTrack 分配失败。本分支默认开启；HDMI EDID 不广播 TrueHD 的 Amlogic/Phicomm 盒子只有这条路能直通。代价：依赖 HAL 内容嗅探，直通失败请关闭后反馈日志。"));
         options.add(option(NEXIO_DV7_TO_DV81, DECODE, "NEXIO DV7→DV8.1", "作用：对齐 NEXIO 的 DV7 实时转 P8.1 开关（默认关闭，DV7 优先走 HEVC HDR10 基底层）。开启后配合基座 libdovi RPU 改写管线实时转换。代价：转换失败会停止播放，CPU/GPU 负载增加。"));
         options.add(option(NEXIO_FIREOS_FALLBACK, DECODE, "NEXIO FireOS 兼容", "作用：对齐 NEXIO 的 fireOsCompatibilityFallbackEnabled（默认关闭）。开启后在 FireOS 设备上启用 IEC 起播延迟监督等兼容性补丁。代价：非 FireOS 设备无效果。"));
         options.add(option(PREFER_AAC, AUDIO, "AAC 优先", "作用：有多条音轨时优先选兼容性更高的 AAC。电视无声、切换音轨失败时建议开启；追求原始多声道/高码率时关闭。代价：可能放弃质量更高的音轨。"));

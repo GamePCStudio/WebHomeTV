@@ -860,7 +860,16 @@ public class ExoUtil {
                         enableAudioOutputPlaybackParams)
                 .setAudioOutputProvider(
                         ExoDiagnosticAudioOutput.provider(directPolicy.wrapOutputProvider(outputProvider, diagnostics), diagnostics));
-        return ExoDiagnosticAudioOutput.sink(builder.build(), diagnostics);
+        DefaultAudioSink sink = builder.build();
+        // WebHomeTV.ExoNexio fork: intercept TrueHD/DTS/DTS-HD at configure()
+        // time (Kodi-style IEC raw bitstream route). The builder-level tweaks
+        // cannot see TrueHD on boxes whose EDID hides it (Media3 decodes to
+        // PCM during negotiation), so the sink must own the decision.
+        if (ExoNexioIntegration.isIecPassthroughEnabled()) {
+            ExoNexioIntegration.log("iec passthrough sink wrapper installed");
+            return new ExoNexioPassthroughSink(sink);
+        }
+        return ExoDiagnosticAudioOutput.sink(sink, diagnostics);
     }
 
     private static MediaSource.Factory buildMediaSourceFactory(
