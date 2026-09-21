@@ -215,11 +215,13 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
   /**
    * Fongmi media3 1.11 adaptation: intercept the config-API configure so the native TrueHD
    * session is used instead of ForwardingAudioSink forwarding straight to DefaultAudioSink.
+   * The legacy configure(Format,int,int[]) cannot be overridden: ForwardingAudioSink declares
+   * it final to force new-API implementations.
    */
   @Override
   public void configure(androidx.media3.exoplayer.audio.AudioSink.AudioSinkConfig audioSinkConfig)
       throws ConfigurationException {
-    configure(
+    configureIntoNativeSession(
         audioSinkConfig.format,
         audioSinkConfig.preferredBufferSizeOverride,
         audioSinkConfig.outputChannelMapping == null
@@ -227,8 +229,8 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
             : audioSinkConfig.outputChannelMapping.toArray());
   }
 
-  @Override
-  public void configure(Format inputFormat, int specifiedBufferSize, @Nullable int[] outputChannels)
+  private void configureIntoNativeSession(
+      Format inputFormat, int specifiedBufferSize, @Nullable int[] outputChannels)
       throws ConfigurationException {
     configuredFormat = inputFormat;
     handledEndOfStream = false;
@@ -241,7 +243,16 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
       clearPendingWriteError();
       pendingReleaseUntilMs = C.TIME_UNSET;
       clearTransportValidationRuntimeOutputState();
-      super.configure(inputFormat, specifiedBufferSize, outputChannels);
+      // ForwardingAudioSink.configure(AudioSinkConfig) forwards to the delegate
+      // DefaultAudioSink; the legacy final overload is just a Builder shim over this.
+      super.configure(
+          new androidx.media3.exoplayer.audio.AudioSink.AudioSinkConfig.Builder(inputFormat)
+              .setPreferredBufferSizeOverride(specifiedBufferSize)
+              .setOutputChannelMapping(
+                  outputChannels == null
+                      ? null
+                      : com.google.common.primitives.ImmutableIntArray.copyOf(outputChannels))
+              .build());
       return;
     }
     if (MimeTypes.AUDIO_TRUEHD.equals(inputFormat.sampleMimeType)) {

@@ -155,22 +155,6 @@ public final class KodiTrueHdEntryAudioSink extends ForwardingAudioSink
   }
 
   @Override
-  public void configure(Format inputFormat, int specifiedBufferSize, @Nullable int[] outputChannels)
-      throws ConfigurationException {
-    AudioSink targetSink = selectSink(inputFormat);
-    if (activeSink != targetSink) {
-      activeSink.reset();
-      activeSink = targetSink;
-      applyStoredState(activeSink);
-    }
-    if (activeSink == baselineSink) {
-      super.configure(inputFormat, specifiedBufferSize, outputChannels);
-    } else {
-      activeSink.configure(inputFormat, specifiedBufferSize, outputChannels);
-    }
-  }
-
-  @Override
   public void play() {
     if (activeSink == baselineSink) {
       super.play();

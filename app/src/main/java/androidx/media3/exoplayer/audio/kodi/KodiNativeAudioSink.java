@@ -162,12 +162,14 @@ public final class KodiNativeAudioSink extends ForwardingAudioSink
    * Fongmi media3 1.11 adaptation: the renderer configures via {@link AudioSinkConfig}. The
    * inherited ForwardingAudioSink implementation would forward the config straight to the
    * delegate DefaultAudioSink and skip the native session entirely, so intercept here and
-   * translate to the legacy configure path that owns the native session.
+   * translate to the internal configureIntoNativeSession path that owns the native session.
+   * The legacy configure(Format,int,int[]) cannot be overridden: ForwardingAudioSink declares
+   * it final to force new-API implementations.
    */
   @Override
   public void configure(androidx.media3.exoplayer.audio.AudioSink.AudioSinkConfig audioSinkConfig)
       throws ConfigurationException {
-    configure(
+    configureIntoNativeSession(
         audioSinkConfig.format,
         audioSinkConfig.preferredBufferSizeOverride,
         audioSinkConfig.outputChannelMapping == null
@@ -175,8 +177,8 @@ public final class KodiNativeAudioSink extends ForwardingAudioSink
             : audioSinkConfig.outputChannelMapping.toArray());
   }
 
-  @Override
-  public void configure(Format inputFormat, int specifiedBufferSize, @Nullable int[] outputChannels)
+  private void configureIntoNativeSession(
+      Format inputFormat, int specifiedBufferSize, @Nullable int[] outputChannels)
       throws ConfigurationException {
     configuredFormat = inputFormat;
     handledEndOfStream = false;
