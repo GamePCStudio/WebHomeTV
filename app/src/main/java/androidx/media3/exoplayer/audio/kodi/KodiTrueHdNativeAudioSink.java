@@ -919,6 +919,12 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     return bytesConsumed >= originalRemaining;
   }
 
+  // Steady-state batching: TrueHD access units are small (~2-3KB, ~2.9ms each); issuing one
+  // JNI write per AU starves the native pump on low-end boxes (periodic AudioFlinger underruns
+  // seen on Amlogic X12). Accumulate ~48ms worth before a single nWrite.
+  private static final long TRUEHD_STEADY_STATE_BATCH_TARGET_US = 48_000;
+  private long steadyStateBatchFirstPtsUs = C.TIME_UNSET;
+
   private boolean handleTrueHdSteadyStateBuffer(
       ByteBuffer buffer, long presentationTimeUs, int encodedAccessUnitCount) throws WriteException {
     if (hasPendingPassthroughStartupWindow()) {
@@ -929,6 +935,27 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
       if (hasPendingPassthroughStartupWindow()) {
         return false;
       }
+    }
+    if (steadyStateBatchFirstPtsUs == C.TIME_UNSET) {
+      steadyStateBatchFirstPtsUs = presentationTimeUs;
+    }
+    long batchedDurationUs = presentationTimeUs - steadyStateBatchFirstPtsUs;
+    boolean batchFull = batchedDurationUs >= TRUEHD_STEADY_STATE_BATCH_TARGET_US;
+    if (!batchFull) {
+      // Keep accumulating: consume the AU into the pending window without writing yet.
+      maybeProbePassthroughStartupBuffer(buffer, presentationTimeUs, encodedAccessUnitCount);
+      appendToPendingPassthroughStartupWindow(buffer, presentationTimeUs, encodedAccessUnitCount);
+      handledEndOfStream = false;
+      return true;
+    }
+    steadyStateBatchFirstPtsUs = C.TIME_UNSET;
+    // Flush the accumulated batch to the native session first, then write the current AU.
+    int flushedBytes = writePendingPassthroughStartupWindow();
+    if (flushedBytes < 0) {
+      return false;
+    }
+    if (hasPendingPassthroughStartupWindow()) {
+      return false;
     }
     return writeBufferDirect(buffer, presentationTimeUs, encodedAccessUnitCount);
   }
@@ -973,6 +1000,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     lastTrueHdSelectedPath = null;
     lastTrueHdLoggedStateKey = null;
     lastTrueHdDecisionLogMs = 0L;
+    steadyStateBatchFirstPtsUs = C.TIME_UNSET;
   }
 
   private void appendToPendingPassthroughStartupWindow(
