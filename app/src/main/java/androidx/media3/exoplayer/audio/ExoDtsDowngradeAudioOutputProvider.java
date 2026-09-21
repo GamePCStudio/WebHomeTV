@@ -85,7 +85,7 @@ public final class ExoDtsDowngradeAudioOutputProvider extends ForwardingAudioOut
 
     private static boolean isDebugLoggingEnabled() {
         try {
-            return com.fongmi.android.tv.player.SpiderDebug.isEnabled();
+            return com.github.catvod.crawler.SpiderDebug.isEnabled();
         } catch (Throwable ignored) {
             return false;
         }
