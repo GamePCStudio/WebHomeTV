@@ -1302,6 +1302,7 @@
     <string name="player_audio_book_notification">有声书后台通知</string>
     <string name="player_adblock">去广告</string>
     <string name="player_tunnel">隧道模式</string>
+    <string name="player_force_dts_hd_downgrade">强制DTS-HD降级为DTS</string>
     <string name="player_buffer">前向缓冲目标</string>
     <string name="player_buffer_bytes">内存缓冲上限</string>
     <string name="player_back_buffer">已播放数据保留</string>

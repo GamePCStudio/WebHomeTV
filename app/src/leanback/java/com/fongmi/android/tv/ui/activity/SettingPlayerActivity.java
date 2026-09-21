@@ -87,6 +87,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.autoPlayText.setText(getSwitch(PlayerSetting.isAutoPlay()));
         mBinding.autoChangeText.setText(getSwitch(PlayerSetting.isAutoChange()));
         mBinding.failureFallbackText.setText((failureFallback = ResUtil.getStringArray(R.array.select_player_failure_fallback))[PlayerSetting.getFailureFallback()]);
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
         mBinding.backgroundText.setText(getSwitch(PlayerSetting.isBackgroundOn()));
         mBinding.musicNotificationText.setText(getSwitch(PlayerSetting.isMusicNotification()));
         mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
@@ -135,6 +136,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.failureFallback.setOnClickListener(this::setFailureFallback);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.tunnel.setOnClickListener(this::setTunnel);
+        mBinding.forceDtsHdDowngrade.setOnClickListener(this::setForceDtsHdDowngrade);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
         mBinding.caption.setOnLongClickListener(this::onCaption);
@@ -458,6 +460,11 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     private void setAudioBookNotification(View view) {
         PlayerSetting.putAudioBookNotification(!PlayerSetting.isAudioBookNotification());
         mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
+    }
+
+    private void setForceDtsHdDowngrade(View view) {
+        PlayerSetting.putForceDtsHdDowngrade(!PlayerSetting.isForceDtsHdDowngrade());
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
     }
 
     private void setAudioDecode(View view) {
