@@ -165,7 +165,7 @@ public final class KodiNativeAudioSink extends ForwardingAudioSink
    * translate to the legacy configure path that owns the native session.
    */
   @Override
-  public void configure(androidx.media3.exoplayer.audio.AudioSinkConfig audioSinkConfig)
+  public void configure(androidx.media3.exoplayer.audio.AudioSink.AudioSinkConfig audioSinkConfig)
       throws ConfigurationException {
     configure(
         audioSinkConfig.format,

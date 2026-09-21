@@ -217,7 +217,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
    * session is used instead of ForwardingAudioSink forwarding straight to DefaultAudioSink.
    */
   @Override
-  public void configure(androidx.media3.exoplayer.audio.AudioSinkConfig audioSinkConfig)
+  public void configure(androidx.media3.exoplayer.audio.AudioSink.AudioSinkConfig audioSinkConfig)
       throws ConfigurationException {
     configure(
         audioSinkConfig.format,
