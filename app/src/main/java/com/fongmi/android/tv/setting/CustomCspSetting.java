@@ -509,7 +509,8 @@ public class CustomCspSetting {
         item.setId("live_" + System.currentTimeMillis() + "_" + Long.toHexString(System.nanoTime()));
         item.setKind(KIND_LIVE);
         item.setType(0);
-        item.setPlayerType(2);
+        // WebHomeTV.EXO fork: default per-channel player type is EXO (0).
+        item.setPlayerType(0);
         item.setUa("okhttp");
         return item;
     }
@@ -803,7 +804,8 @@ public class CustomCspSetting {
                 key = null;
                 if (!wasLive) {
                     if (type == null) type = 0;
-                    if (playerType == null) playerType = 2;
+                    // WebHomeTV.EXO fork: default per-channel player type is EXO (0).
+                    if (playerType == null) playerType = 0;
                     if (TextUtils.isEmpty(ua)) ua = "okhttp";
                 }
                 homePage = null;

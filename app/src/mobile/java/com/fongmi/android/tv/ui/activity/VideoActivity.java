@@ -3972,6 +3972,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onPlayerKernel() {
+        // WebHomeTV.EXO fork: EXO is the only kernel, so the picker is a no-op.
         if (playerKernelSwitchRefreshing) return;
         PlayerKernelDialog.show(this, player().getPlayerType(), this::switchPlayerKernel);
     }

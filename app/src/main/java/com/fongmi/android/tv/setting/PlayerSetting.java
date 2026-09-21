@@ -11,6 +11,8 @@ public class PlayerSetting {
     public static final int EXO = 0;
     public static final int IJK = 1;
     public static final int MPV = 2;
+    /** WebHomeTV.EXO fork: EXO is the only selectable playback kernel. */
+    public static final boolean SINGLE_KERNEL = true;
     public static final int RENDER_SURFACE = 0;
     public static final int RENDER_TEXTURE = 1;
     public static final int MPV_RENDER_OPENGL = 0;
@@ -33,7 +35,7 @@ public class PlayerSetting {
     private static final int DEFAULT_PLAY_CACHE_OPTION = 0;
 
     public static int getPlayer() {
-        int player = Prefers.getInt("player", EXO);
+        int player = SINGLE_KERNEL ? EXO : Prefers.getInt("player", EXO);
         if (isPlayer(player)) return player;
         putPlayer(EXO);
         return EXO;
@@ -92,19 +94,20 @@ public class PlayerSetting {
     }
 
     public static boolean isPlayer(int player) {
-        return player == EXO || player == IJK || player == MPV;
+        return SINGLE_KERNEL ? player == EXO : player == EXO || player == IJK || player == MPV;
     }
 
     public static int sanitizePlayer(int player) {
-        return player == IJK || player == MPV ? player : EXO;
+        return SINGLE_KERNEL || (player != IJK && player != MPV) ? EXO : player;
     }
 
     public static int nextPlayer(int player) {
-        return switch (sanitizePlayer(player)) {
+        int next = switch (sanitizePlayer(player)) {
             case EXO -> IJK;
             case IJK -> MPV;
             default -> EXO;
         };
+        return SINGLE_KERNEL ? EXO : next;
     }
 
     public static int getRender() {
@@ -269,6 +272,7 @@ public class PlayerSetting {
     }
 
     public static int getBackground() {
+        // WebHomeTV.EXO fork: background playback defaults to OFF.
         int stored = Prefers.getInt("background", BackgroundPlaybackPolicy.OFF);
         int normalized = BackgroundPlaybackPolicy.normalize(stored);
         if (stored != normalized) Prefers.put("background", normalized);

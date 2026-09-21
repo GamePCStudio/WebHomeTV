@@ -1,7 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">魚影視</string>
+    <string name="app_name">魚影視EXO</string>
 
     <!-- Live -->
     <string name="live_pass">密碼</string>
@@ -1249,8 +1249,6 @@
 
     <string-array name="select_player_kernel">
         <item>EXO</item>
-        <item>IJK</item>
-        <item>MPV</item>
     </string-array>
     <string-array name="select_buffer_bytes">
         <item>自動</item>

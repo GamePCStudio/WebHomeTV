@@ -87,6 +87,8 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.videoDecodeText.setText(getSwitch(PlayerSetting.isVideoPrefer()));
         mBinding.osdText.setText(getOsdText(osd = ResUtil.getStringArray(R.array.select_player_osd)));
         mBinding.kernelText.setText((kernel = ResUtil.getStringArray(R.array.select_player_kernel))[PlayerSetting.getPlayer()]);
+        // WebHomeTV.EXO fork: EXO is the only kernel, hide the kernel row.
+        mBinding.kernel.setVisibility(android.view.View.GONE);
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.lutText.setText(LutSetting.getSummary());
         setMpvRows();

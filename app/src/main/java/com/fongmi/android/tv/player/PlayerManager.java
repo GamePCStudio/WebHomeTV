@@ -766,7 +766,9 @@ public class PlayerManager implements ParseCallback {
     }
 
     public String getPlayerText() {
-        return ResUtil.getStringArray(R.array.select_player_kernel)[playerType];
+        String[] kernels = ResUtil.getStringArray(R.array.select_player_kernel);
+        int index = (playerType >= 0 && playerType < kernels.length) ? playerType : 0;
+        return kernels[index];
     }
 
     public int getPlayerType() {

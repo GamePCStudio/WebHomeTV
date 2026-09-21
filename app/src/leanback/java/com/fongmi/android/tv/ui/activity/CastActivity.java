@@ -229,6 +229,7 @@ public class CastActivity extends PlaybackActivity implements CustomKeyDownVod.L
 
     private void onPlayerKernel() {
         if (player().isEmpty()) return;
+        // WebHomeTV.EXO fork: EXO is the only kernel, so the picker is a no-op.
         PlayerKernelDialog.show(this, player().getPlayerType(), this::switchPlayerKernel);
     }
 
