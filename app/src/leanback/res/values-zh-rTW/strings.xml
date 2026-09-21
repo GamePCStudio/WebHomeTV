@@ -33,4 +33,8 @@
     <string name="timer_60">1 小時</string>
     <string name="timer_delay">延長 5 分鐘</string>
     <string name="timer_cancel">取消定時器</string>
+    <!-- Setting -->
+
+    <string name="setting_language">設置和語言</string>
+
 </resources>
