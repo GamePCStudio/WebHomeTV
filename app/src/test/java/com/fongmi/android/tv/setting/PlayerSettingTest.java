@@ -25,20 +25,16 @@ public class PlayerSettingTest {
     }
 
     @Test
-    public void nextPlayer_cyclesInKernelPriorityOrder() {
-        assertEquals(PlayerSetting.IJK, PlayerSetting.nextPlayer(PlayerSetting.EXO));
-        assertEquals(PlayerSetting.MPV, PlayerSetting.nextPlayer(PlayerSetting.IJK));
-        assertEquals(PlayerSetting.SYSTEM, PlayerSetting.nextPlayer(PlayerSetting.MPV));
-        assertEquals(PlayerSetting.EXO, PlayerSetting.nextPlayer(PlayerSetting.SYSTEM));
+    public void nextPlayer_exoOnlyAlwaysReturnsExo() {
+        assertEquals(PlayerSetting.EXO, PlayerSetting.nextPlayer(PlayerSetting.EXO));
+        assertEquals(PlayerSetting.EXO, PlayerSetting.nextPlayer(PlayerSetting.IJK));
     }
 
     @Test
-    public void kernelOrder_rankAndPositionRoundTrip() {
-        assertArrayEquals(new int[]{PlayerSetting.EXO, PlayerSetting.IJK, PlayerSetting.MPV, PlayerSetting.SYSTEM}, PlayerSetting.KERNEL_ORDER);
+    public void kernelOrder_exoOnlyRankAndPositionRoundTrip() {
+        assertArrayEquals(new int[]{PlayerSetting.EXO}, PlayerSetting.KERNEL_ORDER);
         assertEquals(0, PlayerSetting.kernelRank(PlayerSetting.EXO));
-        assertEquals(1, PlayerSetting.kernelRank(PlayerSetting.IJK));
-        assertEquals(2, PlayerSetting.kernelRank(PlayerSetting.MPV));
-        assertEquals(3, PlayerSetting.kernelRank(PlayerSetting.SYSTEM));
+        assertEquals(0, PlayerSetting.kernelRank(PlayerSetting.IJK));
         for (int rank = 0; rank < PlayerSetting.kernelCount(); rank++) {
             assertEquals(rank, PlayerSetting.kernelRank(PlayerSetting.kernelAt(rank)));
         }
@@ -51,21 +47,16 @@ public class PlayerSettingTest {
     }
 
     @Test
-    public void orderKernels_reordersConstantIndexedLabels() {
-        String[] labels = {"EXO", "IJK", "系统", "MPV"};
-        assertArrayEquals(new String[]{"EXO", "IJK", "MPV", "系统"}, PlayerSetting.orderKernels(labels));
+    public void orderKernels_exoOnlyPicksExoLabel() {
+        String[] labels = {"EXO", "IJK", "System", "MPV"};
+        assertArrayEquals(new String[]{"EXO"}, PlayerSetting.orderKernels(labels));
     }
 
     @Test
-    public void firstUntriedPlayer_followsPriorityOrderSkippingTriedKernels() {
-        boolean[] tried = new boolean[PlayerSetting.MPV + 1];
-        tried[PlayerSetting.MPV] = true;
+    public void firstUntriedPlayer_exoOnlyReturnsExoUntilTried() {
+        boolean[] tried = new boolean[PlayerSetting.EXO + 1];
         assertEquals(PlayerSetting.EXO, PlayerSetting.firstUntriedPlayer(tried));
         tried[PlayerSetting.EXO] = true;
-        assertEquals(PlayerSetting.IJK, PlayerSetting.firstUntriedPlayer(tried));
-        tried[PlayerSetting.IJK] = true;
-        assertEquals(PlayerSetting.SYSTEM, PlayerSetting.firstUntriedPlayer(tried));
-        tried[PlayerSetting.SYSTEM] = true;
         assertEquals(PlayerSetting.NONE, PlayerSetting.firstUntriedPlayer(tried));
     }
 
@@ -99,7 +90,7 @@ public class PlayerSettingTest {
 
         boolean[] fromExo = new boolean[PlayerSetting.MPV + 1];
         fromExo[PlayerSetting.EXO] = true;
-        assertEquals(PlayerSetting.IJK, PlayerSetting.firstUntriedPlayer(fromExo));
+        assertEquals(PlayerSetting.NONE, PlayerSetting.firstUntriedPlayer(fromExo));
     }
 
 }

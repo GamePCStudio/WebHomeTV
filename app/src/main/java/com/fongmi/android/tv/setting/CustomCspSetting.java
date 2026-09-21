@@ -509,7 +509,7 @@ public class CustomCspSetting {
         item.setId("live_" + System.currentTimeMillis() + "_" + Long.toHexString(System.nanoTime()));
         item.setKind(KIND_LIVE);
         item.setType(0);
-        item.setPlayerType(2);
+        item.setPlayerType(0);
         item.setUa("okhttp");
         return item;
     }
