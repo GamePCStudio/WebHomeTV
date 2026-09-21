@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
+import androidx.annotation.Nullable;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.common.util.Util;
 
@@ -31,6 +32,12 @@ public final class ExoDtsDowngradeAudioOutputProvider extends ForwardingAudioOut
     /** DTS core passthrough only carries up to 5.1 (6 channels). */
     private static final int DTS_CORE_MAX_CHANNEL_COUNT = 6;
 
+    /**
+     * Buffer budget for the downgraded DTS core direct track. Matches the vendor-direct
+     * compressed buffer size used by ExoCompressedAudioDirectPolicy on the same devices.
+     */
+    private static final int DTS_DOWNGRADE_BUFFER_SIZE = 256 * 1024;
+
     private final State state;
 
     private ExoDtsDowngradeAudioOutputProvider(AudioTrackAudioOutputProvider delegate, State state) {
@@ -52,7 +59,36 @@ public final class ExoDtsDowngradeAudioOutputProvider extends ForwardingAudioOut
     @Override
     public OutputConfig getOutputConfig(FormatConfig formatConfig) throws ConfigurationException {
         Format rewritten = rewrite(formatConfig.format);
-        return rewritten == null ? super.getOutputConfig(formatConfig) : super.getOutputConfig(withFormat(formatConfig, rewritten));
+        OutputConfig config = rewritten == null ? super.getOutputConfig(formatConfig) : super.getOutputConfig(withFormat(formatConfig, rewritten));
+        OutputConfig expanded = expandBufferSize(config);
+        return expanded == null ? config : expanded;
+    }
+
+    /**
+     * Compressed direct playback on Amlogic-style HALs exposes a very small default ALSA buffer
+     * (~85ms at 48kHz). DTS core passthrough frames are written from a streaming pipeline whose
+     * pacing jitter easily exceeds that headroom, so the receiver repeatedly loses sync and
+     * playback stutters. Expand the AudioTrack buffer to the same 256 KiB budget the vendor-direct
+     * path uses to ride out feed jitter.
+     */
+    @Nullable
+    private OutputConfig expandBufferSize(OutputConfig config) {
+        int target = Math.max(config.bufferSize, DTS_DOWNGRADE_BUFFER_SIZE);
+        if (target == config.bufferSize) return null;
+        if (isDebugLoggingEnabled()) {
+            android.util.Log.d("exo-audio-dts", "expand bufferSize " + config.bufferSize + " -> " + target
+                    + " encoding=" + config.encoding + " sampleRate=" + config.sampleRate
+                    + " channelMask=0x" + Integer.toHexString(config.channelMask));
+        }
+        return config.buildUpon().setBufferSize(target).build();
+    }
+
+    private static boolean isDebugLoggingEnabled() {
+        try {
+            return com.fongmi.android.tv.player.SpiderDebug.isEnabled();
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private FormatConfig withFormat(FormatConfig config, Format rewritten) {
