@@ -1,0 +1,14 @@
+{
+  "nexio_integration": {
+    "media_repo": "https://github.com/johnneerdael/media",
+    "media_commit": "e9297c15f39947c1ae8972fa191cbd64914e81cb",
+    "media_branch": "main",
+    "media3_baseline": "1.10.0",
+    "nexio_repo": "https://github.com/johnneerdael/nexio",
+    "nexio_commit": "main@2026-06-27",
+    "mode": "policy-integration-layer",
+    "settings_source": "app/src/main/java/com/nexio/tv/data/local/PlayerSettingsDataStore.kt",
+    "created_from_branch": "WebHomeTV.EXO",
+    "notes": "Composite build of the media fork is not possible on Gradle 9.5.1/AGP 9.2.1; NEXIO behaviour is reproduced through Media3 stable seams (LoadControl/AudioSink/DV policy) mirroring the existing ExoDv5* ports."
+  }
+}

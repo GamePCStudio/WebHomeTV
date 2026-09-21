@@ -34,6 +34,7 @@ import com.fongmi.android.tv.setting.PlaybackProfileMergePolicy;
 import com.fongmi.android.tv.setting.MpvPerformanceSetting;
 import com.fongmi.android.tv.setting.IjkPerformanceSetting;
 import com.fongmi.android.tv.setting.ExoPerformanceSetting;
+import com.fongmi.android.tv.setting.NexioPlayerSettings;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.utils.FileUtil;
@@ -562,6 +563,10 @@ public final class PlaybackPerformanceDialog extends DialogFragment {
                             : PlaybackPerformanceSetting.getDv7HandlingText();
             case PlaybackPerformanceCatalog.SOFT_VIDEO_TUNE -> onOff(PlaybackPerformanceSetting.isSoftVideoTuneEnabled());
             case PlaybackPerformanceCatalog.AUDIO_PASSTHROUGH -> onOff(PlayerSetting.isAudioPassThrough());
+            // WebHomeTV.ExoNexio fork: NEXIO option labels.
+            case PlaybackPerformanceCatalog.NEXIO_IEC_PASSTHROUGH -> onOff(NexioPlayerSettings.isIecPassthroughEnabled());
+            case PlaybackPerformanceCatalog.NEXIO_DV7_TO_DV81 -> onOff(NexioPlayerSettings.isDv7ToDv81Enabled());
+            case PlaybackPerformanceCatalog.NEXIO_FIREOS_FALLBACK -> onOff(NexioPlayerSettings.isFireOsFallbackEnabled());
             case PlaybackPerformanceCatalog.MPV_MULTICHANNEL_AUDIO -> MpvPerformanceSetting.getMultichannelAudioText();
             case PlaybackPerformanceCatalog.PREFER_AAC -> onOff(PlayerSetting.isPreferAAC());
             case PlaybackPerformanceCatalog.AUDIO_SOFT_PREFER -> onOff(PlayerSetting.isAudioPrefer());
@@ -654,6 +659,10 @@ public final class PlaybackPerformanceDialog extends DialogFragment {
             };
             case PlaybackPerformanceCatalog.SOFT_VIDEO_TUNE -> () -> toggle(PlaybackPerformanceSetting::isSoftVideoTuneEnabled, PlaybackPerformanceSetting::putSoftVideoTuneEnabled);
             case PlaybackPerformanceCatalog.AUDIO_PASSTHROUGH -> () -> togglePlayer(id, PlayerSetting::isAudioPassThrough, PlayerSetting::putAudioPassThrough);
+            // WebHomeTV.ExoNexio fork: NEXIO option toggles.
+            case PlaybackPerformanceCatalog.NEXIO_IEC_PASSTHROUGH -> () -> toggle(NexioPlayerSettings::isIecPassthroughEnabled, NexioPlayerSettings::putIecPassthroughEnabled);
+            case PlaybackPerformanceCatalog.NEXIO_DV7_TO_DV81 -> () -> toggle(NexioPlayerSettings::isDv7ToDv81Enabled, NexioPlayerSettings::putDv7ToDv81Enabled);
+            case PlaybackPerformanceCatalog.NEXIO_FIREOS_FALLBACK -> () -> toggle(NexioPlayerSettings::isFireOsFallbackEnabled, NexioPlayerSettings::putFireOsFallbackEnabled);
             case PlaybackPerformanceCatalog.MPV_MULTICHANNEL_AUDIO -> () -> {
                 MpvPerformanceSetting.putMultichannelAudioMode(
                         MpvPerformanceSetting.isMultichannelPcm()

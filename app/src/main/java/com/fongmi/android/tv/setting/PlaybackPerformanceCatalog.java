@@ -63,6 +63,10 @@ public final class PlaybackPerformanceCatalog {
     public static final String EXO_REBUFFER = "exo_rebuffer";
     public static final String EXO_PRIORITIZE_TIME = "exo_prioritize_time";
     public static final String EXO_NETWORK_PROTECTION = "exo_network_protection";
+    // WebHomeTV.ExoNexio fork: NEXIO-aligned playback options.
+    public static final String NEXIO_IEC_PASSTHROUGH = "nexio_iec_passthrough";
+    public static final String NEXIO_DV7_TO_DV81 = "nexio_dv7_to_dv81";
+    public static final String NEXIO_FIREOS_FALLBACK = "nexio_fireos_fallback";
 
     private static final String BASIC = "基础性能";
     private static final String BUFFER = "内存缓冲与磁盘缓存";
@@ -117,6 +121,10 @@ public final class PlaybackPerformanceCatalog {
         options.add(option(DV7_HDR10_FALLBACK, DECODE, "DV7处理", "默认“升级P8.1”：设备不支持当前DV7硬解、但支持P8.1硬解时，使用libdovi mode 2实时改写RPU并丢弃增强层；原生DV7可硬解时保持原样。P8.1模式会锁定整次播放，不会自动降级HDR10；转换数据无效时会停止播放。选择“降级HDR10”会整次使用基底层，兼容性更高但失去Dolby Vision动态元数据。"));
         options.add(option(SOFT_VIDEO_TUNE, DECODE, "软解降负载", "作用：仅在 EXO 使用 FFmpeg 软解时降低滤波和解码负载。低性能设备/软解视频可开启；硬解4K基本不受影响。代价：积极降负载会牺牲细节，不能替代硬解。"));
         options.add(option(AUDIO_PASSTHROUGH, AUDIO, "音频直通", "作用：把 Dolby/DTS 等压缩音频交给电视或功放解码，保留多声道。设备明确支持且要环绕声才开启；出现无声立即关闭。代价：输出链不支持时不会自动变成可播放音频。"));
+        // WebHomeTV.ExoNexio fork: NEXIO-aligned options (github.com/johnneerdael/nexio defaults).
+        options.add(option(NEXIO_IEC_PASSTHROUGH, AUDIO, "NEXIO IEC 直通", "作用：启用 NEXIO（FireOS 移植版 Media3）的 Kodi 式 IEC 61937 打包直通路由，TrueHD/DTS 等在 Amlogic/FireOS 盒子上按内容嗅探直出。默认关闭（与 NEXIO 默认一致）；普通设备保持关闭，FireOS/Amlogic 盒子接功放且标准直通失败时尝试。代价：依赖盒子 HAL 对流内容的检测，不兼容时会无声。"));
+        options.add(option(NEXIO_DV7_TO_DV81, DECODE, "NEXIO DV7→DV8.1", "作用：对齐 NEXIO 的 DV7 实时转 P8.1 开关（默认关闭，DV7 优先走 HEVC HDR10 基底层）。开启后配合基座 libdovi RPU 改写管线实时转换。代价：转换失败会停止播放，CPU/GPU 负载增加。"));
+        options.add(option(NEXIO_FIREOS_FALLBACK, DECODE, "NEXIO FireOS 兼容", "作用：对齐 NEXIO 的 fireOsCompatibilityFallbackEnabled（默认关闭）。开启后在 FireOS 设备上启用 IEC 起播延迟监督等兼容性补丁。代价：非 FireOS 设备无效果。"));
         options.add(option(PREFER_AAC, AUDIO, "AAC 优先", "作用：有多条音轨时优先选兼容性更高的 AAC。电视无声、切换音轨失败时建议开启；追求原始多声道/高码率时关闭。代价：可能放弃质量更高的音轨。"));
         options.add(option(AUDIO_SOFT_PREFER, AUDIO, "音频软解优先", "作用：优先用 FFmpeg 解码冷门音频格式。硬解无声或格式不支持时开启；普通设备保持关闭。代价：增加 CPU、功耗，通常不影响视频画面流畅度。"));
         options.add(option(VIDEO_SOFT_PREFER, AUDIO, "视频软解优先", "作用：绕过异常硬件解码器，改用 FFmpeg。仅在硬解花屏/崩溃且分辨率较低时尝试；4K电视不要开启。代价：CPU、发热和掉帧风险显著增加。"));

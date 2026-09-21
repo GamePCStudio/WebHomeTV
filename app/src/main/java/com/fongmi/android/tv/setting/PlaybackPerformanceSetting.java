@@ -405,7 +405,14 @@ public class PlaybackPerformanceSetting {
 
     public static int getDv7HandlingMode() {
         ensureInitialized();
-        return clampDv7Handling(Prefers.getInt(KEY_DV7_HANDLING, DV7_HANDLING_P81));
+        int mode = clampDv7Handling(Prefers.getInt(KEY_DV7_HANDLING, DV7_HANDLING_P81));
+        // WebHomeTV.ExoNexio fork: NEXIO experimentalDv7ToDv81Enabled (default off)
+        // means DV7 prefers the HEVC HDR10 base layer unless the user explicitly
+        // chose the P8.1 realtime conversion here or enabled the NEXIO toggle.
+        if (!NexioPlayerSettings.isDv7ToDv81Enabled() && !Prefers.getPrefers().contains(KEY_DV7_HANDLING)) {
+            return DV7_HANDLING_HDR10;
+        }
+        return mode;
     }
 
     public static boolean isDv7P81Enabled() {

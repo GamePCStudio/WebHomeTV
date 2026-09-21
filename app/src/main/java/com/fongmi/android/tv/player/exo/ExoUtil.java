@@ -227,7 +227,11 @@ public class ExoUtil {
                         dolbyVisionPlaybackState, assSession))
                 .setVideoChangeFrameRateStrategy(ExoPerformanceSetting.getFrameRateStrategy());
         if (PlaybackPerformanceSetting.isHighBufferEnabled()) builder.setLoadControl(buildEnhancedLoadControl());
-        else ExoPlaybackDiagnostics.logDefaultLoadControl(PlaybackPerformanceSetting.getProfile(PlayerSetting.EXO));
+        else if (ExoNexioIntegration.shouldOverrideLoadControl()) {
+            // WebHomeTV.ExoNexio fork: NEXIO-aligned LoadControl defaults (20s/50s/3s/5s/350MB).
+            builder.setLoadControl(ExoNexioIntegration.buildNexioLoadControl());
+            ExoNexioIntegration.log("nexio load control applied (min=20s max=50s start=3s rebuffer=5s target=350MB)");
+        } else ExoPlaybackDiagnostics.logDefaultLoadControl(PlaybackPerformanceSetting.getProfile(PlayerSetting.EXO));
         if (PlaybackPerformanceSetting.isBandwidthMeterEnabled()) {
             builder.setBandwidthMeter(automaticBandwidth
                     ? buildAutomaticBandwidthMeter(App.get())
@@ -839,6 +843,10 @@ public class ExoUtil {
                 compressedAudioDirectPolicy == null
                         ? new ExoCompressedAudioDirectPolicy(context)
                         : compressedAudioDirectPolicy;
+        if (ExoNexioIntegration.isIecPassthroughEnabled()) {
+            // WebHomeTV.ExoNexio fork: Kodi-style IEC direct route preference.
+            ExoNexioIntegration.log("iec passthrough enabled, vendor direct route preferred");
+        }
         AudioTrackAudioOutputProvider outputProvider =
                 new AudioTrackAudioOutputProvider.Builder(
                         passthrough ? context.getApplicationContext() : null)
