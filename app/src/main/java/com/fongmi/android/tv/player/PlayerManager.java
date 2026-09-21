@@ -1728,6 +1728,29 @@ public class PlayerManager implements ParseCallback {
         if (!tracks.isEmpty()) engine.setTrack(tracks);
     }
 
+    /**
+     * Passthrough audio track switches on Amlogic-style HALs tear down the direct AudioTrack and
+     * re-create it; the old stream goes silent while the renderer re-fed only trickles from the
+     * network, so receivers lose DTS lock and playback audibly stutters for many seconds.
+     * A tiny seek right after the switch re-primes the whole pipeline with a single clean
+     * source re-open instead of a slow trickle.
+     */
+    public boolean isPassthroughAudioSwitchStall() {
+        return isExo() && PlayerSetting.isAudioPassThrough(PlayerSetting.EXO);
+    }
+
+    public void reprimeAfterPassthroughSwitch() {
+        try {
+            long position = getPosition();
+            long duration = player == null ? C.TIME_UNSET : player.getDuration();
+            long target = Math.min(position + 90, duration == C.TIME_UNSET ? position + 90 : duration - 250);
+            if (target < 0) return;
+            seekTo(target);
+        } catch (Throwable error) {
+            PlaybackTrace.log("passthrough-switch", playbackTrace.current(), "action=reprime result=failed error=%s", error.getClass().getSimpleName());
+        }
+    }
+
     public void setSecondarySubtitleTrack(Track track) {
         if (track != null && !track.isDisabled()
                 && engine instanceof MpvPlayerEngine mpv) {

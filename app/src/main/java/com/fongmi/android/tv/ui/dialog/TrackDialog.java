@@ -812,6 +812,9 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
             return;
         }
         player.setTrack(Arrays.asList(item.key(player.getKey()).save()));
+        if (type == C.TRACK_TYPE_AUDIO && player.isPassthroughAudioSwitchStall()) {
+            player.reprimeAfterPassthroughSwitch();
+        }
         dismiss();
     }
 
