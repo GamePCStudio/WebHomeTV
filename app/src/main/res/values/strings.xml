@@ -1307,6 +1307,7 @@
     <string name="player_audio_book_notification">Audiobook background notification</string>
     <string name="player_adblock">Remove ads</string>
     <string name="player_tunnel">Tunnel mode</string>
+    <string name="player_force_dts_hd_downgrade">Force DTS-HD to DTS</string>
     <string name="player_buffer">Forward buffer target</string>
     <string name="player_buffer_bytes">Memory buffer limit</string>
     <string name="player_back_buffer">Played-data retention</string>

@@ -93,6 +93,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.liveSourceFallbackText.setText(getSwitch(LiveSetting.isSourceFallback()));
         mBinding.rememberBrightnessText.setText(getSwitch(PlayerSetting.isRememberBrightness()));
         mBinding.failureFallbackText.setText((failureFallback = ResUtil.getStringArray(R.array.select_player_failure_fallback))[PlayerSetting.getFailureFallback()]);
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
         mBinding.musicNotificationText.setText(getSwitch(PlayerSetting.isMusicNotification()));
         mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
         mBinding.audioDecodeText.setText(getSwitch(PlayerSetting.isAudioPrefer()));
@@ -148,6 +149,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.failureFallback.setOnClickListener(this::setFailureFallback);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.tunnel.setOnClickListener(this::setTunnel);
+        mBinding.forceDtsHdDowngrade.setOnClickListener(this::setForceDtsHdDowngrade);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
         mBinding.caption.setOnLongClickListener(this::onCaption);
@@ -549,6 +551,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         PlaybackPerformanceSetting.markCustom();
         mBinding.audioPassThroughText.setText(getSwitch(PlayerSetting.isAudioPassThrough()));
         setPerformanceText();
+    }
+
+    private void setForceDtsHdDowngrade(View view) {
+        PlayerSetting.putForceDtsHdDowngrade(!PlayerSetting.isForceDtsHdDowngrade());
+        mBinding.forceDtsHdDowngradeText.setText(getSwitch(PlayerSetting.isForceDtsHdDowngrade()));
     }
 
     private void setVideoDecode(View view) {
