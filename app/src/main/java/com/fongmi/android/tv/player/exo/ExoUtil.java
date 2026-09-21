@@ -857,13 +857,13 @@ public class ExoUtil {
                         .setAudioTrackBuilderModifier(
                                 directPolicy::modifyAudioTrackBuilder)
                         .build();
-        DefaultAudioSink.Builder builder = new DefaultAudioSink.Builder(context)
-                .setEnableFloatOutput(enableFloatOutput)
-                .setEnableAudioOutputPlaybackParameters(
-                        enableAudioOutputPlaybackParams)
-                .setAudioOutputProvider(
-                        ExoDiagnosticAudioOutput.provider(directPolicy.wrapOutputProvider(outputProvider, diagnostics), diagnostics));
-        DefaultAudioSink sink = builder.build();
+        DefaultAudioSink.Builder builder = newAudioSinkBuilder(
+                context,
+                enableFloatOutput,
+                enableAudioOutputPlaybackParams,
+                directPolicy,
+                diagnostics,
+                outputProvider);
         // WebHomeTV.ExoNexio fork: NEXIO Kodi C++ audio sink route (real IEC 61937 / MAT
         // packer, the same code path that works in the NEXIO app on this platform).
         // TrueHD goes through KodiTrueHdNativeAudioSink (DTS-masked raw bitstream via HAL
@@ -881,9 +881,33 @@ public class ExoUtil {
             AmazonQuirks.setIecPackerDtshdPassthroughEnabled(true);
             AmazonQuirks.setIecPackerDtshdCoreFallbackEnabled(true);
             ExoNexioIntegration.log("nexio kodi cpp audio sink installed (truehd + dts iec)");
-            return KodiTrueHdEntryAudioSink.create(sink, builder.build());
+            // DefaultAudioSink.Builder is single-use in media3 1.1+ (checkState(!buildCalled)):
+            // build a SECOND, independent sink instead of reusing the same builder.
+            DefaultAudioSink.Builder trueHdBuilder = newAudioSinkBuilder(
+                    context,
+                    enableFloatOutput,
+                    enableAudioOutputPlaybackParams,
+                    directPolicy,
+                    diagnostics,
+                    outputProvider);
+            return KodiTrueHdEntryAudioSink.create(builder.build(), trueHdBuilder.build());
         }
-        return ExoDiagnosticAudioOutput.sink(sink, diagnostics);
+        return ExoDiagnosticAudioOutput.sink(builder.build(), diagnostics);
+    }
+
+    private static DefaultAudioSink.Builder newAudioSinkBuilder(
+            Context context,
+            boolean enableFloatOutput,
+            boolean enableAudioOutputPlaybackParams,
+            ExoCompressedAudioDirectPolicy directPolicy,
+            @Nullable ExoDiagnosticCollector diagnostics,
+            AudioTrackAudioOutputProvider outputProvider) {
+        return new DefaultAudioSink.Builder(context)
+                .setEnableFloatOutput(enableFloatOutput)
+                .setEnableAudioOutputPlaybackParameters(
+                        enableAudioOutputPlaybackParams)
+                .setAudioOutputProvider(
+                        ExoDiagnosticAudioOutput.provider(directPolicy.wrapOutputProvider(outputProvider, diagnostics), diagnostics));
     }
 
     private static MediaSource.Factory buildMediaSourceFactory(
