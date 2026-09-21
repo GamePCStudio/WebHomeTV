@@ -22,7 +22,7 @@ public class PlayerSetting {
      * 常量数值本身是持久化值（也是 select_player_kernel 等数组的下标），不能重排，
      * 所以顺序只在这张表里表达：选择菜单按它排列，播放失败的内核回退也按它推进。
      */
-    public static final int[] KERNEL_ORDER = {EXO, IJK, MPV, SYSTEM};
+    public static final int[] KERNEL_ORDER = {EXO};
     public static final int RENDER_SURFACE = 0;
     public static final int RENDER_TEXTURE = 1;
     public static final int MPV_RENDER_OPENGL = 0;
@@ -178,7 +178,7 @@ public class PlayerSetting {
     }
 
     public static boolean isPlayer(int player) {
-        return player == EXO || player == IJK || player == SYSTEM || player == MPV;
+        return player == EXO;
     }
 
     public static int sanitizePlayer(int player) {
@@ -455,7 +455,7 @@ public class PlayerSetting {
     }
 
     public static int getBackground() {
-        int stored = Prefers.getInt("background", BackgroundPlaybackPolicy.ON);
+        int stored = Prefers.getInt("background", BackgroundPlaybackPolicy.OFF);
         int normalized = BackgroundPlaybackPolicy.normalize(stored);
         if (stored != normalized) Prefers.put("background", normalized);
         return normalized;

@@ -1720,9 +1720,6 @@
 
     <string-array name="select_player_kernel">
         <item>EXO</item>
-        <item>IJK</item>
-        <item>System</item>
-        <item>MPV</item>
     </string-array>
     <string-array name="select_mpv_render">
         <item>OpenGL</item>
