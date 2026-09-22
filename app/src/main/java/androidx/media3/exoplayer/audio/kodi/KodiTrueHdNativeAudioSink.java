@@ -786,9 +786,14 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
         }
       }
       if (!playCommandReceived && isTrueHdStartupWindowFull()) {
+        // handleBuffer being called means the renderer is actively feeding us, i.e. the
+        // player is NOT paused. After a seek/stall media3 may not re-issue sink.play()
+        // while playWhenReady stays true, so waiting here deadlocked the startup window
+        // (20s+ stalls on X12). Recover: accept the play authorization implicitly and
+        // issue the native play now.
         Log.i(
             TAG,
-            "TrueHD startup window full before native play"
+            "TrueHD startup window full before native play - recovering with implicit play"
                 + " pendingSize="
                 + pendingPassthroughStartupSize
                 + " accessUnits="
@@ -797,7 +802,14 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
                 + getPendingPassthroughStartupWindowDurationUs()
                 + " targetUs="
                 + getTrueHdStartupWindowTargetUs());
-        return false;
+        playCommandReceived = true;
+        maybeIssueNativePlayForTrueHdStartup();
+        if (!nativePlayIssued) {
+          return false;
+        }
+        if (hasPendingPassthroughStartupWindow()) {
+          flushPendingTrueHdStartupWindowForPlay();
+        }
       }
     }
 
