@@ -604,7 +604,11 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
   }
 
   private void flushBaseline() {
-    playCommandReceived = false;
+    // NOTE: playCommandReceived is intentionally preserved across flush(). media3 does NOT
+    // re-issue sink.play() after a seek (the player is still in STATE_READY/BUFFERING with
+    // playWhenReady=true), so clearing it here deadlocked TrueHD's startup window: the
+    // window filled (694ms) but 'window full before native play' waited forever for a play
+    // command that never comes -> 20s+ stalls on every TrueHD seek (seen on X12).
     nativePlayIssued = false;
     handledEndOfStream = false;
     clearPendingWriteError();
