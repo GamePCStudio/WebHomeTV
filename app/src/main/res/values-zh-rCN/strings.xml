@@ -670,6 +670,7 @@
     <string name="setting_auto">自动</string>
     <string name="setting_custom">自定义</string>
     <string name="setting_language">语言</string>
+    <string name="setting_settings_language">设置和语言</string>
     <string name="setting_size">图片尺寸</string>
     <string name="setting_ui_scale">界面大小</string>
     <string name="dialog_close">关闭</string>

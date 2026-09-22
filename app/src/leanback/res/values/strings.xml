@@ -33,8 +33,4 @@
     <string name="timer_60">1 hour</string>
     <string name="timer_delay">Delay 5 minutes</string>
     <string name="timer_cancel">Cancel timer</string>
-    <!-- Setting -->
-
-    <string name="setting_language">Settings &amp; Language</string>
-
 </resources>

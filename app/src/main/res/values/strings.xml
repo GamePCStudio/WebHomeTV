@@ -672,6 +672,7 @@
     <string name="setting_auto">Auto</string>
     <string name="setting_custom">Custom</string>
     <string name="setting_language">Language</string>
+    <string name="setting_settings_language">Settings &amp; Language</string>
     <string name="setting_size">Image size</string>
     <string name="setting_ui_scale">Interface size</string>
     <string name="dialog_close">Close</string>
