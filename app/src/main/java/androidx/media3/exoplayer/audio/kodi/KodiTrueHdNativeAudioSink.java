@@ -158,6 +158,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     pendingReleaseUntilMs = C.TIME_UNSET;
     clearPendingPassthroughStartupWindow();
     clearPendingEac3BurstWindow();
+    clearSteadyStateBatch();
     clearTransportValidationRuntimeOutputState();
     clearTrueHdStartupState();
   }
@@ -242,6 +243,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     clearTrueHdStartupState();
     clearPendingPassthroughStartupWindow();
     clearPendingEac3BurstWindow();
+    clearSteadyStateBatch();
     if (!shouldUseNativeKodiPath(inputFormat)) {
       closeSession(true);
       clearPendingWriteError();
@@ -535,6 +537,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     if (hasPendingEac3BurstWindow()) {
       writePendingEac3BurstWindow();
     }
+    flushSteadyStateBatch();
     nDrain(nativeHandle);
     handledEndOfStream = true;
   }
@@ -608,6 +611,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     clearTrueHdStartupState();
     clearPendingPassthroughStartupWindow();
     clearPendingEac3BurstWindow();
+    clearSteadyStateBatch();
     if (!shouldUseNativeKodiPath(configuredFormat)) {
       super.flush();
       return;
@@ -630,6 +634,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     clearTrueHdStartupState();
     clearPendingPassthroughStartupWindow();
     clearPendingEac3BurstWindow();
+    clearSteadyStateBatch();
     clearTransportValidationRuntimeOutputState();
     closeSession(true);
     configuredFormat = null;
@@ -645,6 +650,7 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     clearTrueHdStartupState();
     clearPendingPassthroughStartupWindow();
     clearPendingEac3BurstWindow();
+    clearSteadyStateBatch();
     clearTransportValidationRuntimeOutputState();
     closeSession(false);
     configuredFormat = null;
@@ -859,7 +865,10 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
   private boolean hasPendingDataForTrueHd() {
     boolean nativeHasPendingData = nativeHandle != 0L && nHasPendingData(nativeHandle);
     if (trueHdStartupCompleted) {
-      return nativeHasPendingData || hasPendingPassthroughStartupWindow() || hasPendingEac3BurstWindow();
+      return nativeHasPendingData
+          || hasPendingPassthroughStartupWindow()
+          || hasPendingEac3BurstWindow()
+          || steadyStateBatchSize > 0;
     }
     if (!nativePlayIssued) {
       if (playCommandReceived && hasPendingPassthroughStartupWindow()) {
@@ -921,8 +930,13 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
 
   // Steady-state batching: TrueHD access units are small (~2-3KB, ~2.9ms each); issuing one
   // JNI write per AU starves the native pump on low-end boxes (periodic AudioFlinger underruns
-  // seen on Amlogic X12). Accumulate ~48ms worth before a single nWrite.
+  // seen on Amlogic X12). Accumulate ~48ms worth in a dedicated batch buffer before a single
+  // nWrite. MUST NOT reuse the startup pending window: that one is flushed on every
+  // handleBuffer entry, which defeated the previous batching attempt (2-3 AU flushes).
   private static final long TRUEHD_STEADY_STATE_BATCH_TARGET_US = 48_000;
+  @Nullable private byte[] steadyStateBatchData;
+  private int steadyStateBatchSize;
+  private int steadyStateBatchAccessUnits;
   private long steadyStateBatchFirstPtsUs = C.TIME_UNSET;
 
   private boolean handleTrueHdSteadyStateBuffer(
@@ -939,25 +953,63 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     if (steadyStateBatchFirstPtsUs == C.TIME_UNSET) {
       steadyStateBatchFirstPtsUs = presentationTimeUs;
     }
+    int bytesToAppend = buffer.remaining();
+    int requiredSize = steadyStateBatchSize + bytesToAppend;
+    if (steadyStateBatchData == null || steadyStateBatchData.length < requiredSize) {
+      int newCapacity = Math.max(requiredSize, 32_768);
+      byte[] newBuffer = new byte[newCapacity];
+      if (steadyStateBatchData != null && steadyStateBatchSize > 0) {
+        System.arraycopy(steadyStateBatchData, 0, newBuffer, 0, steadyStateBatchSize);
+      }
+      steadyStateBatchData = newBuffer;
+    }
+    buffer.get(steadyStateBatchData, steadyStateBatchSize, bytesToAppend);
+    steadyStateBatchSize = requiredSize;
+    steadyStateBatchAccessUnits += Math.max(1, encodedAccessUnitCount);
+    buffer.position(buffer.limit());
+    handledEndOfStream = false;
     long batchedDurationUs = presentationTimeUs - steadyStateBatchFirstPtsUs;
-    boolean batchFull = batchedDurationUs >= TRUEHD_STEADY_STATE_BATCH_TARGET_US;
-    if (!batchFull) {
-      // Keep accumulating: consume the AU into the pending window without writing yet.
-      maybeProbePassthroughStartupBuffer(buffer, presentationTimeUs, encodedAccessUnitCount);
-      appendToPendingPassthroughStartupWindow(buffer, presentationTimeUs, encodedAccessUnitCount);
-      handledEndOfStream = false;
+    if (batchedDurationUs < TRUEHD_STEADY_STATE_BATCH_TARGET_US) {
       return true;
     }
+    return flushSteadyStateBatch();
+  }
+
+  private boolean flushSteadyStateBatch() throws WriteException {
+    if (steadyStateBatchSize <= 0 || nativeHandle == 0L) {
+      steadyStateBatchFirstPtsUs = C.TIME_UNSET;
+      steadyStateBatchSize = 0;
+      steadyStateBatchAccessUnits = 0;
+      return true;
+    }
+    ByteBuffer batchBuffer = ByteBuffer.allocateDirect(steadyStateBatchSize);
+    batchBuffer.put(steadyStateBatchData, 0, steadyStateBatchSize);
+    batchBuffer.flip();
+    int bytesConsumed =
+        nWrite(
+            nativeHandle,
+            batchBuffer,
+            batchBuffer.position(),
+            batchBuffer.remaining(),
+            steadyStateBatchFirstPtsUs != C.TIME_UNSET ? steadyStateBatchFirstPtsUs : 0L,
+            steadyStateBatchAccessUnits);
+    nConsumeLastWriteOutputBytes(nativeHandle);
+    drainCapturedValidationBursts();
+    maybeRecordTransportValidationRuntimeEvents();
+    int nativeWriteErrorCode = nConsumeLastWriteErrorCode(nativeHandle);
+    updateTransportValidationRoute();
+    if (nativeWriteErrorCode < 0 && bytesConsumed <= 0) {
+      maybeHandlePendingWriteError(nativeWriteErrorCode);
+      return false;
+    }
+    if (bytesConsumed <= 0) {
+      return false;
+    }
+    clearPendingWriteError();
     steadyStateBatchFirstPtsUs = C.TIME_UNSET;
-    // Flush the accumulated batch to the native session first, then write the current AU.
-    int flushedBytes = writePendingPassthroughStartupWindow();
-    if (flushedBytes < 0) {
-      return false;
-    }
-    if (hasPendingPassthroughStartupWindow()) {
-      return false;
-    }
-    return writeBufferDirect(buffer, presentationTimeUs, encodedAccessUnitCount);
+    steadyStateBatchSize = 0;
+    steadyStateBatchAccessUnits = 0;
+    return true;
   }
 
   private boolean isTrueHdStartupRefillRequired() {
@@ -986,6 +1038,13 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     pendingPassthroughStartupFirstPtsUs = C.TIME_UNSET;
     pendingPassthroughStartupLastPtsUs = C.TIME_UNSET;
     pendingPassthroughStartupLastDurationUs = 0L;
+  }
+
+  private void clearSteadyStateBatch() {
+    steadyStateBatchData = null;
+    steadyStateBatchSize = 0;
+    steadyStateBatchAccessUnits = 0;
+    steadyStateBatchFirstPtsUs = C.TIME_UNSET;
   }
 
   private void clearTrueHdStartupState() {
@@ -1774,21 +1833,25 @@ public final class KodiTrueHdNativeAudioSink extends ForwardingAudioSink
     maybeRecordTransportValidationRuntimeEvents();
     int nativeWriteErrorCode = nConsumeLastWriteErrorCode(nativeHandle);
     updateTransportValidationRoute();
-    Log.i(
-        TAG,
-        (isTrueHdStartupActive() ? "TrueHD startup write" : "TrueHD steady-state pending write")
-            + " bytesConsumed="
-            + bytesConsumed
-            + " outputBytesWritten="
-            + outputBytesWritten
-            + " nativeWriteErrorCode="
-            + nativeWriteErrorCode
-            + " pendingSize="
-            + pendingPassthroughStartupSize
-            + " pendingAck="
-            + pendingPassthroughStartupAcknowledgedBytes
-            + " accessUnits="
-            + pendingPassthroughStartupAccessUnits);
+    // Verbose-gated: unconditional per-flush logging here produced a >1700 lines/10s logcat
+    // flood on the audio thread (chatty expiry) and contributed to underruns on weak boxes.
+    if (AmazonQuirks.isFireOsIecVerboseLoggingEnabled()) {
+      Log.i(
+          TAG,
+          (isTrueHdStartupActive() ? "TrueHD startup write" : "TrueHD steady-state pending write")
+              + " bytesConsumed="
+              + bytesConsumed
+              + " outputBytesWritten="
+              + outputBytesWritten
+              + " nativeWriteErrorCode="
+              + nativeWriteErrorCode
+              + " pendingSize="
+              + pendingPassthroughStartupSize
+              + " pendingAck="
+              + pendingPassthroughStartupAcknowledgedBytes
+              + " accessUnits="
+              + pendingPassthroughStartupAccessUnits);
+    }
     if (nativeWriteErrorCode < 0 && bytesConsumed <= 0) {
       maybeHandlePendingWriteError(nativeWriteErrorCode);
       recordTransportValidationWriteEvent(requestedBytes, bytesConsumed);
