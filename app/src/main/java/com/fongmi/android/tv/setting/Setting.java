@@ -353,6 +353,14 @@ public class Setting {
         Prefers.put("incognito", incognito);
     }
 
+    public static boolean isHomeSiteLock() {
+        return Prefers.getBoolean("home_site_lock");
+    }
+
+    public static void putHomeSiteLock(boolean homeSiteLock) {
+        Prefers.put("home_site_lock", homeSiteLock);
+    }
+
     public static int getLanguage() {
         int language = Prefers.getInt("language", LANGUAGE_FOLLOW_SYSTEM);
         return isLanguage(language) ? language : LANGUAGE_FOLLOW_SYSTEM;

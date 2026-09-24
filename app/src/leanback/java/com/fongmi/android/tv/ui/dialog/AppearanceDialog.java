@@ -31,6 +31,7 @@ public final class AppearanceDialog extends DialogFragment implements ThemeDialo
     private MaterialTextView themeValue;
     private MaterialTextView imageSizeValue;
     private MaterialTextView languageValue;
+    private MaterialTextView homeSiteLockValue;
 
     public static void show(Fragment fragment) {
         new AppearanceDialog().show(fragment.getChildFragmentManager(), AppearanceDialog.class.getSimpleName());
@@ -56,6 +57,7 @@ public final class AppearanceDialog extends DialogFragment implements ThemeDialo
         themeValue = addRow(content, R.string.setting_theme_color, getThemeText(), view -> ThemeDialog.show(this));
         imageSizeValue = addRow(content, R.string.setting_size, imageSizes[PlayerSetting.getSize()], this::chooseImageSize);
         languageValue = addRow(content, R.string.setting_language, languages[Setting.getLanguageIndex()], this::chooseLanguage);
+        homeSiteLockValue = addRow(content, R.string.setting_home_site_lock, getHomeSiteLockText(), this::toggleHomeSiteLock);
         return content;
     }
 
@@ -120,6 +122,17 @@ public final class AppearanceDialog extends DialogFragment implements ThemeDialo
             dismissAllowingStateLoss();
             RefreshEvent.language();
         });
+    }
+
+    private void toggleHomeSiteLock(View view) {
+        boolean locked = !Setting.isHomeSiteLock();
+        Setting.putHomeSiteLock(locked);
+        homeSiteLockValue.setText(getHomeSiteLockText());
+        notifyChanged();
+    }
+
+    private String getHomeSiteLockText() {
+        return getString(Setting.isHomeSiteLock() ? R.string.setting_on : R.string.setting_off);
     }
 
     @Override

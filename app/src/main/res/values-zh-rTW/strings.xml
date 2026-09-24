@@ -654,7 +654,8 @@
     <string name="setting_auto">自動</string>
     <string name="setting_custom">自訂</string>
     <string name="setting_language">語言</string>
-    <string name="setting_settings_language">設置和語言</string>
+    <string name="setting_settings_language">外觀和語言</string>
+    <string name="setting_home_site_lock">首頁源鎖定</string>
     <string name="setting_size">圖片尺寸</string>
     <string name="setting_ui_scale">介面大小</string>
     <string name="dialog_close">關閉</string>

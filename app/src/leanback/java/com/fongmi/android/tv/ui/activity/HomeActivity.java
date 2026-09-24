@@ -350,6 +350,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         checkAction(getIntent());
         setTitle();
         setLogo();
+        syncHomeSiteLock();
         setFunc();
         getHistory();
         getVideo();
@@ -507,6 +508,10 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void setLogo() {
         ImgUtil.logo(mBinding.logo);
+    }
+
+    private void syncHomeSiteLock() {
+        mBinding.title.setSiteLocked(Setting.isHomeSiteLock());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -738,6 +743,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     protected void onResume() {
         super.onResume();
         mClock.start();
+        syncHomeSiteLock();
         if (mWeb != null) mWeb.onResume();
     }
 
